@@ -7,7 +7,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "three": ["node_modules/three/src/Three"],
+      "three/*": ["node_modules/three/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

@@ -32,7 +32,7 @@ const Header: React.FC = () => {
             <NavLink to="/guardian" icon={<User className="w-4 h-4" />} label="Guardian Network" />
             <NavLink to="/sanctuary" icon={<HeartPulse className="w-4 h-4" />} label="Sanctuary" />
             <button className="cyber-button">
-              Join the Network
+            <NavLink to="/join" icon={<HeartPulse className="w-1 h-1" />} label="Join The Network" />
             </button>
           </nav>
           
