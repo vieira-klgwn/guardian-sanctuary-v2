@@ -1,0 +1,19 @@
+
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="200" cy="200" r="160" fill="url(#sanctra-gradient)" />
+  <circle cx="200" cy="200" r="140" fill="#0A192F" />
+  <path d="M200 100C144.772 100 100 144.772 100 200C100 255.228 144.772 300 200 300C255.228 300 300 255.228 300 200C300 144.772 255.228 100 200 100ZM200 280C155.817 280 120 244.183 120 200C120 155.817 155.817 120 200 120C244.183 120 280 155.817 280 200C280 244.183 244.183 280 200 280Z" fill="url(#ring-gradient)" />
+  <circle cx="165" cy="175" r="15" fill="#64FFDA" />
+  <circle cx="235" cy="175" r="15" fill="#64FFDA" />
+  <path d="M160 230C160 230 180 250 200 250C220 250 240 230 240 230" stroke="#64FFDA" stroke-width="6" stroke-linecap="round" />
+  <defs>
+    <radialGradient id="sanctra-gradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 200) rotate(90) scale(160)">
+      <stop stop-color="#64FFDA" stop-opacity="0.7" />
+      <stop offset="1" stop-color="#0EA5E9" stop-opacity="0.3" />
+    </radialGradient>
+    <linearGradient id="ring-gradient" x1="100" y1="200" x2="300" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6" />
+      <stop offset="1" stop-color="#64FFDA" />
+    </linearGradient>
+  </defs>
+</svg>
