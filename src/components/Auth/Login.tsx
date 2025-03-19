@@ -24,7 +24,7 @@ const Login: React.FC = () => {
       if (authError) throw authError;
 
       if (data.user) {
-        navigate('/profile');
+        navigate('/');
       }
     } catch (error: any) {
       setError(error.message);

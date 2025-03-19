@@ -4,6 +4,13 @@ import {
   Lock, Shield, Smartphone, CreditCard, 
   Mail, LifeBuoy, MessageSquare, Clock, CheckCircle, Search
 } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client with your project details
+const supabase = createClient(
+  'https://musqwfamtlcflnfucqwy.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11c3F3ZmFtdGxjZmxuZnVjcXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyODU3MDgsImV4cCI6MjA1Nzg2MTcwOH0.Vx2zAO1Bviv3n428KsiyzqSIqj5UZB1j8WE84vrqOAI'
+);
 
 const incidentTypes = [
   { id: 'check-vulnerability', name: 'Check Vulnerability of Your System', icon: <Search className="w-5 h-5" /> },
@@ -140,20 +147,19 @@ const SanctuaryToolkit: React.FC = () => {
 
     setIsScanning(true);
     try {
-      const response = await fetch('http://localhost:5000/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const { data, error } = await supabase.functions.invoke('scanner', {
         body: JSON.stringify({ url: targetUrl }),
       });
-      const data = await response.json();
-      if (data.error) {
+      if (error) {
+        setScanResults([error.message || 'Scan failed']);
+      } else if (data.error) {
         setScanResults([data.error]);
       } else {
         setScanResults(data.vulnerabilities.length > 0 ? data.vulnerabilities : ['No problems found!']);
       }
-      setRecoveryStep(1); // Move to results step
+      setRecoveryStep(1);
     } catch (error) {
-      setScanResults(['Scan failed. Check if the server is running.']);
+      setScanResults(['Scan failed. Check your connection or URL.']);
     }
     setIsScanning(false);
   };

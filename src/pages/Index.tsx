@@ -65,19 +65,19 @@ const Index = () => {
     },
     {
       target: '#enlist-now-btn',
-      content: 'Press "Enlist Now" to join and fight online bad things.',
+      content: 'Press "Enlist Now" (Scroll a little bit down) 👇 to join and fight online bad things.',
     },
     {
       target: '#footer-join-network',
-      content: 'Bottom link: Join the team to help others.',
+      content: 'link at the footer:👇Click "Join the team" to help others.',
     },
     {
       target: '#footer-leaderboard',
-      content: 'Bottom link: See who the best helpers are.',
+      content: 'link at the footer:Click "View Leader board" 👇See who the best helpers are.',
     },
     {
       target: '#footer-challenge',
-      content: 'Bottom link: Try a test to practice stopping online dangers.',
+      content: 'link at the footer👇Click "Start  Challenge" Try a test to practice stopping online dangers.',
     },
   ];
 
@@ -241,7 +241,7 @@ const Index = () => {
             </section>
 
             {/* Danger Alert */}
-            <section className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-red-600/20 to-orange-600/20 border-t border-red-400/30 p-4 flex items-center justify-between animate-slide-up">
+            {/* <section className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-red-600/20 to-orange-600/20 border-t border-red-400/30 p-4 flex items-center justify-between animate-slide-up">
               <div className="flex items-center space-x-3">
                 <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" />
                 <span className="text-sm font-medium text-silver-300">Warning: Big Online Attack in Area 7</span>
@@ -252,7 +252,7 @@ const Index = () => {
               >
                 <Link to="/challenge">Fight Now</Link>
               </Button>
-            </section>
+            </section> */}
 
             {/* Tour Start Popup */}
             {showTourPrompt && (
@@ -290,7 +290,7 @@ const Index = () => {
                 <div
                   className="absolute bg-guardian-dark/90 p-4 rounded-lg border border-cyan-400/30 shadow-lg shadow-cyan-400/20 text-silver-300 animate-fade-in-tour"
                   style={{
-                    top: '50%',
+                    top: '20%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
                     maxWidth: '400px',

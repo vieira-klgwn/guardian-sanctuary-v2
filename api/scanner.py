@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests from React
 
 class VulnerabilityScanner:
     def __init__(self, target_url):
@@ -11,7 +9,6 @@ class VulnerabilityScanner:
         self.vulnerabilities = []
 
     def scan_xss(self):
-        # Stored XSS
         payload = "<script>alert('Stored XSS')</script>"
         try:
             response = requests.post(self.target_url, data={"comment": payload}, timeout=5)
@@ -19,9 +16,6 @@ class VulnerabilityScanner:
                 self.vulnerabilities.append("Stored XSS vulnerability found")
         except:
             pass
-
-        # Reflected XSS
-        payload = "<script>alert('Reflected XSS')</script>"
         try:
             response = requests.get(self.target_url + "?message=" + payload, timeout=5)
             if payload in response.text:
@@ -30,7 +24,6 @@ class VulnerabilityScanner:
             pass
 
     def scan_sql_injection(self):
-        # SQL Injection GET
         payload = "' OR '1'='1"
         try:
             response = requests.get(self.target_url + "?id=" + payload, timeout=5)
@@ -38,8 +31,6 @@ class VulnerabilityScanner:
                 self.vulnerabilities.append("SQL Injection vulnerability found (GET)")
         except:
             pass
-
-        # SQL Injection POST
         try:
             response = requests.post(self.target_url, data={"id": payload}, timeout=5)
             if "error" in response.text.lower():
@@ -81,16 +72,22 @@ class VulnerabilityScanner:
         self.scan_server_misconfiguration()
         return self.vulnerabilities
 
-@app.route('/api/scan', methods=['POST'])
-def scan_vulnerabilities():
-    data = request.get_json()
-    target_url = data.get('url', '')
-    if not target_url:
-        return jsonify({'error': 'No URL provided'}), 400
+# Vercel serverless function handler
+def handler(req):
+    if req.method == 'POST':
+        data = req.get_json()
+        target_url = data.get('url', '')
+        if not target_url:
+            return jsonify({'error': 'No URL provided'}), 400
+        
+        scanner = VulnerabilityScanner(target_url)
+        vulnerabilities = scanner.scan_all()
+        return jsonify({'vulnerabilities': vulnerabilities}), 200
+    
+    return jsonify({'error': 'Method not allowed'}), 405
 
-    scanner = VulnerabilityScanner(target_url)
-    vulnerabilities = scanner.scan_all()
-    return jsonify({'vulnerabilities': vulnerabilities})
+# Vercel expects this to be the entry point
+app.route('/api/scan', methods=['POST'])(handler)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run()
