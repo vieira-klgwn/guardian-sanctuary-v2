@@ -23,13 +23,12 @@ const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
       } glassmorphism shadow-sm`}
       style={{
         backdropFilter: 'blur(15px)',
-        backgroundColor: 'rgba(10, 25, 47, 0.6)', // Translucent dark blue
-        borderBottom: '1px solid rgba(100, 255, 218, 0.1)', // Subtle cyan border
+        backgroundColor: 'rgba(10, 25, 47, 0.6)',
+        borderBottom: '1px solid rgba(100, 255, 218, 0.1)',
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center space-x-3">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="relative w-12 h-12 flex items-center justify-center">
@@ -45,12 +44,11 @@ const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
             </Link>
           </div>
 
-          {/* Desktop Navigation and Actions */}
           <div className="hidden md:flex items-center space-x-6">
             <nav className="flex items-center space-x-4">
-              <NavLink to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" />
-              <NavLink to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" />
-              <NavLink to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" />
+              <NavLink id="header-global-pulse" to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" />
+              <NavLink id="header-guardian-network" to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" />
+              <NavLink id="header-sanctuary" to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" />
             </nav>
             <div className="flex items-center space-x-3">
               {!user ? (
@@ -103,7 +101,6 @@ const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <Button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -114,13 +111,12 @@ const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden glassmorphism border-t border-cyan-400/20">
             <div className="flex flex-col px-4 py-4 space-y-2">
-              <MobileNavLink to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" onClick={() => setMobileMenuOpen(false)} />
-              <MobileNavLink to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" onClick={() => setMobileMenuOpen(false)} />
-              <MobileNavLink to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" onClick={() => setMobileMenuOpen(false)} />
+              <MobileNavLink id="header-global-pulse-mobile" to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" onClick={() => setMobileMenuOpen(false)} />
+              <MobileNavLink id="header-guardian-network-mobile" to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" onClick={() => setMobileMenuOpen(false)} />
+              <MobileNavLink id="header-sanctuary-mobile" to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" onClick={() => setMobileMenuOpen(false)} />
               {!user ? (
                 <>
                   <Button
@@ -173,14 +169,16 @@ const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
 };
 
 interface NavLinkProps {
+  id?: string;
   to: string;
   icon: React.ReactNode;
   label: string;
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ to, icon, label }) => {
+const NavLink: React.FC<NavLinkProps> = ({ id, to, icon, label }) => {
   return (
     <Link
+      id={id}
       to={to}
       className="flex items-center gap-2 px-3 py-2 rounded-lg text-silver-300 hover:bg-cyan-400/10 hover:text-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
     >
@@ -194,9 +192,10 @@ interface MobileNavLinkProps extends NavLinkProps {
   onClick: () => void;
 }
 
-const MobileNavLink: React.FC<MobileNavLinkProps> = ({ to, icon, label, onClick }) => {
+const MobileNavLink: React.FC<MobileNavLinkProps> = ({ id, to, icon, label, onClick }) => {
   return (
     <Link
+      id={id}
       to={to}
       className="flex items-center gap-2 p-2 rounded-lg text-silver-300 hover:bg-cyan-400/10 hover:text-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
       onClick={onClick}
@@ -207,7 +206,6 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ to, icon, label, onClick 
   );
 };
 
-// Animation and glow keyframes
 const styles = `
   @keyframes pulseGlow {
     0%, 100% { opacity: 0.5; transform: scale(1); }
