@@ -1,38 +1,48 @@
-
 import React from 'react';
 import { useAnimatedMount, useCountUp } from '@/utils/animations';
 import { ThreatData } from '@/utils/threatData';
-import { AlertTriangle, Shield, Globe, Clock, BarChart } from 'lucide-react';
+import { AlertTriangle, Shield, Globe, Clock, BarChart, X } from 'lucide-react'; // Added X for close icon
 
 interface ThreatCardProps {
   threat: ThreatData;
   className?: string;
+  setSelectedThreat: (threat: ThreatData | null) => void; // Explicitly typed
 }
 
-const ThreatCard: React.FC<ThreatCardProps> = ({ threat, className = "" }) => {
+const ThreatCard: React.FC<ThreatCardProps> = ({ threat, className = "", setSelectedThreat }) => {
   const mounted = useAnimatedMount();
   const intensity = useCountUp(threat.intensity);
-  
+
   const getThreatColor = () => {
-    switch(threat.type) {
-      case 'ransomware': return 'bg-threat-ransomware/10 border-threat-ransomware/30 text-threat-ransomware';
-      case 'phishing': return 'bg-threat-phishing/10 border-threat-phishing/30 text-threat-phishing';
-      case 'malware': return 'bg-threat-malware/10 border-threat-malware/30 text-threat-malware';
-      case 'ddos': return 'bg-threat-ddos/10 border-threat-ddos/30 text-threat-ddos';
-      default: return 'bg-threat-default/10 border-threat-default/30 text-threat-default';
+    switch (threat.type) {
+      case 'ransomware':
+        return 'bg-threat-ransomware/10 border-threat-ransomware/30 text-threat-ransomware';
+      case 'phishing':
+        return 'bg-threat-phishing/10 border-threat-phishing/30 text-threat-phishing';
+      case 'malware':
+        return 'bg-threat-malware/10 border-threat-malware/30 text-threat-malware';
+      case 'ddos':
+        return 'bg-threat-ddos/10 border-threat-ddos/30 text-threat-ddos';
+      default:
+        return 'bg-threat-default/10 border-threat-default/30 text-threat-default';
     }
   };
-  
+
   const getThreatIcon = () => {
-    switch(threat.type) {
-      case 'ransomware': return <AlertTriangle className="w-5 h-5" />;
-      case 'phishing': return <AlertTriangle className="w-5 h-5" />;
-      case 'malware': return <AlertTriangle className="w-5 h-5" />;
-      case 'ddos': return <AlertTriangle className="w-5 h-5" />;
-      default: return <AlertTriangle className="w-5 h-5" />;
+    switch (threat.type) {
+      case 'ransomware':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'phishing':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'malware':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'ddos':
+        return <AlertTriangle className="w-5 h-5" />;
+      default:
+        return <AlertTriangle className="w-5 h-5" />;
     }
   };
-  
+
   return (
     <div className={`relative group ${mounted ? 'animate-slide-up' : 'opacity-0'} ${className}`}>
       <div className="card-highlight"></div>
@@ -46,9 +56,9 @@ const ThreatCard: React.FC<ThreatCardProps> = ({ threat, className = "" }) => {
             {new Date(threat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-        
+
         <p className="mb-3 text-sm text-guardian-light opacity-90">{threat.description}</p>
-        
+
         <div className="grid grid-cols-2 gap-3 text-xs text-guardian-light opacity-80">
           <div className="flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5" />
@@ -67,6 +77,15 @@ const ThreatCard: React.FC<ThreatCardProps> = ({ threat, className = "" }) => {
             <span>Intensity: {intensity}/10</span>
           </div>
         </div>
+
+        {/* Enhanced Close Button with Icon */}
+        <button
+          onClick={() => setSelectedThreat(null)}
+          className="cyber-button mt-3 flex items-center justify-center gap-1 px-3 py-1 text-xs"
+        >
+          <X className="w-3 h-3" /> {/* Close icon */}
+          <span>Close</span>
+        </button>
       </div>
     </div>
   );

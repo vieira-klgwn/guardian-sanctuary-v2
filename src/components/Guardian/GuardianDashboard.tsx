@@ -1,13 +1,18 @@
-
+// src/components/Guardian/GuardianDashboard.tsx
 import React from 'react';
 import { useAnimatedMount, useCountUp } from '@/utils/animations';
 import { Shield, Award, Bell, TrendingUp, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { useContext } from 'react';
+import { UserContext } from '@/App'; // Adjust path based on your structure
 
 const GuardianDashboard: React.FC = () => {
   const mounted = useAnimatedMount();
   const guardianCount = useCountUp(12578);
   const threatsNeutralized = useCountUp(87425);
-  
+  const user = useContext(UserContext); // Access user state
+
   return (
     <div className={`max-w-6xl mx-auto px-4 py-8 transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <div className="text-center mb-12">
@@ -83,11 +88,32 @@ const GuardianDashboard: React.FC = () => {
         </div>
       </div>
       
-      {/* CTA */}
+      {/* CTA with Additional Links */}
       <div className="text-center">
-        <button className="cyber-button px-8 py-3 text-lg">
-          Become a Guardian
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+          <Button asChild>
+            <Link to="/challenge" className="bg-guardian-cyan text-guardian-dark hover:bg-guardian-cyan/80">
+              Start Challenge
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/leaderboard" className="text-guardian-cyan hover:bg-guardian-cyan/20">
+              View Leaderboard
+            </Link>
+          </Button>
+          {user && (
+            <Button asChild variant="outline">
+              <Link to="/profile" className="text-guardian-cyan hover:bg-guardian-cyan/20">
+                View Profile
+              </Link>
+            </Button>
+          )}
+          <Button asChild>
+            <Link to="/join" className="cyber-button px-8 py-3 text-lg">
+              Become a Guardian
+            </Link>
+          </Button>
+        </div>
         <p className="mt-3 text-sm text-guardian-light/60">
           Join a global movement of cybersecurity defenders
         </p>
