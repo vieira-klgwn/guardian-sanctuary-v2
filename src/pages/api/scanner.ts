@@ -1,87 +1,132 @@
-// pages/api/scanner.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import fetch, { RequestInit, Response } from 'node-fetch'; // Import node-fetch types explicitly
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import sslChecker from 'ssl-checker';
 
-type ScanResponse = {
+interface ScanResponse {
   vulnerabilities?: string[];
   error?: string;
+}
+
+// Helper function to perform HTTP requests with timeout
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000): Promise<Response> => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    console.error(`Fetch error for ${url}:`, (error as Error).message);
+    throw error;
+  }
 };
 
+// Vulnerability scanning function
 async function scanVulnerabilities(targetUrl: string): Promise<string[]> {
   const vulnerabilities: string[] = [];
 
   // Validate URL
+  let urlObj: URL;
   try {
-    new URL(targetUrl);
+    urlObj = new URL(targetUrl);
   } catch {
     throw new Error('Invalid URL provided');
   }
 
-  // Helper function to perform HTTP requests with timeout
-  const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 5000): Promise<Response> => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-      const response = await fetch(url, { ...options, signal: controller.signal } as RequestInit);
-      clearTimeout(id);
-      return response as Response;
-    } catch (error) {
-      console.error(`Fetch error for ${url}:`, (error as Error).message);
-      throw error;
-    }
-  };
-
   try {
-    // Scan for XSS (Reflected)
-    const xssPayload = "<script>alert('Reflected XSS')</script>";
-    const xssUrl = `${targetUrl}?test=${encodeURIComponent(xssPayload)}`;
-    let response = await fetchWithTimeout(xssUrl, { method: 'GET' });
-    if (response && (await response.text()).includes(xssPayload)) {
-      vulnerabilities.push('Reflected XSS vulnerability found');
+    // 1. Check for HTTP Security Headers
+    const response = await fetchWithTimeout(targetUrl, { method: 'GET' });
+    const headers = response.headers;
+
+    if (!headers.get('x-frame-options')) {
+      vulnerabilities.push('Missing X-Frame-Options header (vulnerable to clickjacking)');
+    }
+    if (!headers.get('content-security-policy')) {
+      vulnerabilities.push('Missing Content-Security-Policy header (vulnerable to XSS)');
+    }
+    if (!headers.get('strict-transport-security')) {
+      vulnerabilities.push('Missing Strict-Transport-Security header (HSTS not enforced)');
     }
 
-    // Scan for SQL Injection (GET)
-    const sqlPayload = "' OR '1'='1";
-    const sqlUrl = `${targetUrl}?id=${encodeURIComponent(sqlPayload)}`;
-    response = await fetchWithTimeout(sqlUrl, { method: 'GET' });
-    const sqlText = response ? await response.text() : '';
-    if (response && (sqlText.toLowerCase().includes('sql') || sqlText.toLowerCase().includes('error'))) {
-      vulnerabilities.push('SQL Injection vulnerability found (GET)');
+    // 2. Check for exposed sensitive directories
+    const sensitivePaths = ['/admin', '/.git', '/config', '/backup', '/wp-admin', '/phpinfo.php'];
+    for (const path of sensitivePaths) {
+      const sensitiveUrl = `${targetUrl}${path}`;
+      try {
+        const sensitiveResponse = await fetchWithTimeout(sensitiveUrl, { method: 'GET' });
+        if (sensitiveResponse.status === 200) {
+          const text = await sensitiveResponse.text();
+          if (!text.includes('login') && !text.includes('404')) {
+            vulnerabilities.push(`Exposed sensitive directory: ${path}`);
+          }
+        }
+      } catch (error) {
+        // Ignore errors for individual paths
+      }
     }
 
-    // Scan for Directory Traversal
-    const dirPayload = '../../../../../../etc/passwd';
-    const dirUrl = `${targetUrl}/${dirPayload}`;
-    response = await fetchWithTimeout(dirUrl, { method: 'GET' });
-    if (response && (await response.text()).includes('root:x')) {
-      vulnerabilities.push('Directory Traversal vulnerability found');
+    // 3. Check for outdated server software
+    const serverHeader = headers.get('server');
+    if (serverHeader) {
+      if (serverHeader.includes('Apache/2.2') || serverHeader.includes('nginx/1.0')) {
+        vulnerabilities.push(`Outdated server software detected: ${serverHeader}`);
+      }
     }
 
-    // Scan for Command Injection
-    const cmdPayload = '127.0.0.1; ls';
-    const cmdUrl = `${targetUrl}?cmd=${encodeURIComponent(cmdPayload)}`;
-    response = await fetchWithTimeout(cmdUrl, { method: 'GET' });
-    if (response && (await response.text()).includes('dir')) {
-      vulnerabilities.push('Command Injection vulnerability found');
+    // 4. Check for HTTP methods
+    const traceResponse = await fetchWithTimeout(targetUrl, { method: 'TRACE' });
+    if (traceResponse.status === 200) {
+      vulnerabilities.push('HTTP TRACE method enabled (vulnerable to XST)');
     }
 
-    // Scan for Server Misconfiguration (e.g., exposed admin page)
-    const adminUrl = `${targetUrl}/admin`;
-    response = await fetchWithTimeout(adminUrl, { method: 'GET' });
-    if (response && response.status === 200 && !(await response.text()).includes('login')) {
-      vulnerabilities.push('Server Misconfiguration vulnerability found (exposed admin page)');
+    // 5. Check for SSL/TLS issues using ssl-checker
+    if (targetUrl.startsWith('https')) {
+      try {
+        const sslResult = await sslChecker(urlObj.hostname);
+        if (!sslResult.valid) {
+          vulnerabilities.push('SSL/TLS certificate is invalid or expired');
+        }
+        if (sslResult.daysRemaining < 30) {
+          vulnerabilities.push(`SSL/TLS certificate expires in ${sslResult.daysRemaining} days`);
+        }
+      } catch (error) {
+        vulnerabilities.push('Unable to verify SSL/TLS certificate (potential misconfiguration)');
+      }
     }
+
+    // 6. Check for open ports (basic check using a simple HEAD request to common ports)
+    const commonPorts = [21, 22, 23, 3306]; // FTP, SSH, Telnet, MySQL
+    for (const port of commonPorts) {
+      try {
+        const portUrl = `${urlObj.protocol}//${urlObj.hostname}:${port}`;
+        const portResponse = await fetchWithTimeout(portUrl, { method: 'HEAD' }, 2000);
+        if (portResponse.status === 200) {
+          vulnerabilities.push(`Open port detected: ${port} (potential security risk)`);
+        }
+      } catch (error) {
+        // Ignore errors (port likely closed)
+      }
+    }
+
+    // 7. Check for CORS misconfiguration
+    const corsResponse = await fetchWithTimeout(targetUrl, {
+      method: 'GET',
+      headers: { Origin: 'http://malicious-site.com' },
+    });
+    if (corsResponse.headers.get('access-control-allow-origin') === '*') {
+      vulnerabilities.push('CORS misconfiguration: Access-Control-Allow-Origin set to "*"');
+    }
+
   } catch (error) {
     console.error('Scan error:', (error as Error).message);
     throw new Error(`Failed to scan URL: ${(error as Error).message}`);
   }
 
-  return vulnerabilities;
+  return vulnerabilities.length > 0 ? vulnerabilities : ['No vulnerabilities found'];
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<ScanResponse>) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust for production
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

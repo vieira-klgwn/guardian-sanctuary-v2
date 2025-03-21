@@ -5,6 +5,9 @@ import {
   Mail, LifeBuoy, MessageSquare, Clock, CheckCircle, Search
 } from 'lucide-react';
 
+// Determine the API base URL based on the environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5173';
+
 const incidentTypes = [
   { id: 'check-vulnerability', name: 'Check Vulnerability of Your System', icon: <Search className="w-5 h-5" /> },
   { id: 'account-hack', name: 'Account Compromise', icon: <Lock className="w-5 h-5" /> },
@@ -42,44 +45,72 @@ const SanctuaryToolkit: React.FC = () => {
           }];
         } else if (recoveryStep === 2 && scanResults.length > 0) {
           const steps = [];
-          scanResults.forEach(vuln => {
-            if (vuln.includes('XSS')) {
+          for (const vuln of scanResults) {
+            if (vuln.includes('X-Frame-Options') || vuln.includes('clickjacking')) {
               steps.push({
-                title: 'Fix XSS problem',
-                description: 'Clean your app code to stop bad scripts from running.',
+                title: 'Fix Clickjacking Vulnerability',
+                description: 'Add X-Frame-Options header to prevent clickjacking attacks.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Clickjacking',
+              });
+            } else if (vuln.includes('Content-Security-Policy') || vuln.includes('XSS')) {
+              steps.push({
+                title: 'Fix XSS Vulnerability',
+                description: 'Implement a Content-Security-Policy to mitigate XSS attacks.',
                 action: 'Learn How',
                 actionLink: 'https://owasp.org/www-community/attacks/xss/',
               });
-            } else if (vuln.includes('SQL Injection')) {
+            } else if (vuln.includes('Strict-Transport-Security') || vuln.includes('HSTS')) {
               steps.push({
-                title: 'Fix SQL Injection problem',
-                description: 'Use safe code to stop bad database attacks.',
-                action: 'Learn How',
-                actionLink: 'https://owasp.org/www-community/attacks/SQL_Injection',
-              });
-            } else if (vuln.includes('Directory Traversal')) {
-              steps.push({
-                title: 'Fix Directory Traversal problem',
-                description: 'Block access to secret files in your app.',
-                action: 'Learn How',
-                actionLink: 'https://owasp.org/www-community/attacks/Path_Traversal',
-              });
-            } else if (vuln.includes('Command Injection')) {
-              steps.push({
-                title: 'Fix Command Injection problem',
-                description: 'Stop bad commands from running on your server.',
-                action: 'Learn How',
-                actionLink: 'https://owasp.org/www-community/attacks/Command_Injection',
-              });
-            } else if (vuln.includes('Server Misconfiguration')) {
-              steps.push({
-                title: 'Fix Server Misconfiguration problem',
-                description: 'Hide private pages and fix server settings.',
+                title: 'Enable HSTS',
+                description: 'Add Strict-Transport-Security header to enforce HTTPS.',
                 action: 'Learn How',
                 actionLink: 'https://owasp.org/www-project-secure-headers/',
               });
+            } else if (vuln.includes('Exposed sensitive directory')) {
+              steps.push({
+                title: 'Secure Sensitive Directories',
+                description: 'Restrict access to sensitive directories like /admin or /.git.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Path_Traversal',
+              });
+            } else if (vuln.includes('Outdated server software')) {
+              steps.push({
+                title: 'Update Server Software',
+                description: 'Upgrade your server software to the latest version.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-project-secure-headers/',
+              });
+            } else if (vuln.includes('HTTP TRACE')) {
+              steps.push({
+                title: 'Disable HTTP TRACE Method',
+                description: 'Disable the TRACE method to prevent cross-site tracing (XST).',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Cross_Site_Tracing',
+              });
+            } else if (vuln.includes('SSL/TLS')) {
+              steps.push({
+                title: 'Fix SSL/TLS Issues',
+                description: 'Ensure your SSL/TLS certificate is valid and properly configured.',
+                action: 'Learn How',
+                actionLink: 'https://www.ssllabs.com/ssltest/',
+              });
+            } else if (vuln.includes('Open port')) {
+              steps.push({
+                title: 'Close Unnecessary Ports',
+                description: 'Close open ports that are not needed for your application.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Port_Scanning',
+              });
+            } else if (vuln.includes('CORS')) {
+              steps.push({
+                title: 'Fix CORS Misconfiguration',
+                description: 'Restrict Access-Control-Allow-Origin to trusted domains.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/CORS_OriginHeaderScam',
+              });
             }
-          });
+          }
           return steps.length > 0 ? steps : [{
             title: 'No problems found',
             description: 'Your app looks safe! Keep it updated.',
@@ -144,7 +175,7 @@ const SanctuaryToolkit: React.FC = () => {
     setScanError(null);
 
     try {
-      const response = await fetch('/api/scanner', {
+      const response = await fetch(`${API_BASE_URL}/api/scanner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
