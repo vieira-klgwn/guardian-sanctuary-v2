@@ -1,0 +1,3182 @@
+
+
+this is a next app called Guardian sanctuary. First of all this is the description and some of the codes "Project Description: Guardian Sanctuary
+Guardian Sanctuary is a futuristic web application designed to engage users in a cybersecurity community where they take on the role of "Guardians" to protect the digital world from cyber threats. The app is built with React, TypeScript, and Supabase for authentication and data management, and it features a modern, minimalist UI with a dark mode theme, glassmorphism effects, smooth animations, and a responsive layout. The color palette includes shades of cyan (cyan-400, cyan-500), blue (blue-600), silver (silver-300), and dark grays (guardian-dark, gray-900), creating a high-contrast, futuristic aesthetic.
+Key Features:
+Authentication System:
+Login: Users can log in with their email and password, redirecting to their profile upon success.
+Register: New users can sign up as Guardians, providing their name, email, and password. Upon registration, a record is created in the guardians table in Supabase.
+Profile Page:
+Displays a Guardian’s details, including name, email, score, threats stopped, and motivation.
+Features a progress bar for the next rank, achievement badges (Bronze, Silver, Gold), a motivational quote, and a call-to-action to take on challenges.
+Challenge System:
+Guardians can participate in challenges to earn points. The challenge we designed simulates a phishing attack in Israel, where users must identify the malicious email from multiple-choice options.
+Correct answers award points (e.g., 50 points), which are updated in the guardians table.
+Leaderboard:
+Displays a ranked list of Guardians based on their scores, with additional details like threats stopped, join dates, and recent activity.
+Includes a search bar, global threat status, and a call-to-action to join challenges.
+Navigation (Header):
+A translucent navbar with glassmorphism, featuring a logo, navigation links (Global Pulse, Guardian Network, Sanctuary), and user actions (Sign Up, Login, Profile, Logout, Challenge).
+Responsive design with a mobile menu.
+Layout:
+A wrapper component that includes the Header and a footer with links (Join the Network, View Leaderboard, Start Challenge).
+UI Design Principles:
+Futuristic Aesthetic: Glassmorphism with translucent backgrounds, subtle glow effects, and gradient accents.
+Dark Mode: Built on guardian-dark with high-contrast text (silver-300, cyan-400) for readability.
+Animations: Smooth transitions (transition-all duration-300), fade-in effects (animate-fade-in), and pulse animations (animate-pulse).
+Responsive Design: Flexbox and grid layouts ensure the app works on all screen sizes.
+Interactive Elements: Hover effects, loading spinners, and dynamic progress bars enhance user engagement.
+Technology Stack:
+Frontend: React with TypeScript, Tailwind CSS for styling, and lucide-react for icons.
+Backend: Supabase for authentication (supabase.auth) and database (guardians table).
+Routing: React Router for navigation (Link, useNavigate)."I uploaded a screenshot  And here are some codes of some files that i can show you Challenge.txt"// src/components/Challenges/Challenge.tsx
+import React, { useState, useEffect, useContext } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { UserContext } from '../../App';
+import { AlertTriangle, Shield, Clock, MapPin, CheckCircle, XCircle } from 'lucide-react';
+
+interface ChallengeAnswer {
+  id: number;
+  text: string;
+  isCorrect: boolean;
+}
+
+const Challenge: React.FC = () => {
+  const user = useContext(UserContext);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [challengeData, setChallengeData] = useState({
+    title: "Operation Cyber Shield: Phishing Attack in Israel",
+    description: "A sophisticated phishing campaign has targeted Israeli government officials, aiming to steal sensitive credentials. Intelligence reports indicate that attackers are using emails disguised as official communications. Your task is to identify the phishing email by analyzing the clues provided below.",
+    clues: [
+      "The email claims to be from the Ministry of Defense but uses a suspicious domain: 'mod-gov.israel-security.org'.",
+      "The email contains urgent language, pressuring the recipient to click a link to 'verify their account' within 24 hours.",
+      "The email signature includes a typo: 'Minstry of Defence' instead of 'Ministry of Defense'.",
+      "The email was sent at 3:00 AM local time, which is unusual for official communications.",
+    ],
+    answers: [
+      { id: 1, text: "An email from 'mod-gov.israel-security.org' with a typo in the signature.", isCorrect: true },
+      { id: 2, text: "An email from 'defense.gov.il' with a professional signature.", isCorrect: false },
+      { id: 3, text: "An email from 'support@mod.gov.il' sent during business hours.", isCorrect: false },
+      { id: 4, text: "An email from 'admin@israel.gov' with a secure link.", isCorrect: false },
+    ],
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedAnswer === null) {
+      setResult('Please select an answer to proceed.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setResult(null);
+
+    const chosenAnswer = challengeData.answers.find((answer) => answer.id === selectedAnswer);
+    if (!chosenAnswer) return;
+
+    if (chosenAnswer.isCorrect) {
+      setResult('Threat Identified! +50 points earned for neutralizing the phishing attack.');
+      if (user) {
+        const { data: currentData, error: fetchError } = await supabase
+          .from('guardians')
+          .select('score')
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching score:', fetchError.message);
+          setResult('Correct, but failed to update score. Try again later.');
+        } else {
+          const currentScore = currentData.score || 0;
+          const { error: updateError } = await supabase
+            .from('guardians')
+            .update({ score: currentScore + 50 })
+            .eq('user_id', user.id);
+
+          if (updateError) {
+            console.error('Error updating score:', updateError.message);
+            setResult('Correct, but failed to update score. Try again later.');
+          }
+        }
+      }
+    } else {
+      setResult('Incorrect. This email is not the phishing attempt. Review the clues and try again.');
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 p-6 flex flex-col items-center justify-center">
+      <div className="max-w-3xl w-full bg-guardian-dark/80 rounded-xl shadow-lg p-8 border border-guardian-cyan/20 glassmorphism animate-fade-in">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="w-8 h-8 text-orange-500" />
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+              {challengeData.title}
+            </h2>
+          </div>
+          <div className="flex items-center space-x-2 text-guardian-light/70">
+            <Clock className="w-5 h-5 text-cyan-400" />
+            <span className="text-sm">Time-Sensitive</span>
+          </div>
+        </div>
+
+        {/* Description Section */}
+        <div className="mb-6">
+          <p className="text-guardian-light/80 text-base leading-relaxed">
+            {challengeData.description}
+          </p>
+          <div className="flex items-center space-x-2 mt-4 text-guardian-light/70">
+            <MapPin className="w-5 h-5 text-cyan-400" />
+            <span className="text-sm">Location: Israel</span>
+            <Shield className="w-5 h-5 text-cyan-400 ml-4" />
+            <span className="text-sm">Threat Level: Critical</span>
+          </div>
+        </div>
+
+        {/* Clues Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-guardian-light mb-4">Intelligence Clues</h3>
+          <ul className="space-y-3">
+            {challengeData.clues.map((clue, index) => (
+              <li key={index} className="flex items-start space-x-2 text-guardian-light/70">
+                <span className="text-cyan-400">•</span>
+                <span className="text-sm">{clue}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Challenge Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <h3 className="text-xl font-semibold text-guardian-light mb-4">Identify the Phishing Email</h3>
+            <div className="grid gap-3">
+              {challengeData.answers.map((answer) => (
+                <button
+                  key={answer.id}
+                  type="button"
+                  onClick={() => setSelectedAnswer(answer.id)}
+                  className={`w-full p-4 rounded-lg border text-left transition-all duration-300 ${
+                    selectedAnswer === answer.id
+                      ? 'border-cyan-400 bg-cyan-400/10'
+                      : 'border-guardian-cyan/20 hover:bg-guardian-dark/50 hover:border-cyan-400'
+                  } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isSubmitting}
+                >
+                  <span className="text-guardian-light/80">{answer.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting || selectedAnswer === null}
+            className={`w-full py-3 rounded-full text-white transition-all duration-300 shadow-md hover:shadow-lg ${
+              isSubmitting || selectedAnswer === null
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-cyan-500 hover:bg-cyan-600'
+            }`}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+                <span>Analyzing...</span>
+              </span>
+            ) : (
+              'Submit Analysis'
+            )}
+          </button>
+        </form>
+
+        {/* Result Section */}
+        {result && (
+          <div className="mt-6 p-4 rounded-lg border flex items-center space-x-3 animate-pulse">
+            {result.includes('Correct') ? (
+              <CheckCircle className="w-6 h-6 text-green-400" />
+            ) : (
+              <XCircle className="w-6 h-6 text-red-400" />
+            )}
+            <p className={result.includes('Correct') ? 'text-green-400' : 'text-red-400'}>
+              {result}
+            </p>
+          </div>
+        )}
+
+        {/* Additional Information Section */}
+        <div className="mt-8 p-4 bg-guardian-dark/50 rounded-lg border border-guardian-cyan/20">
+          <h3 className="text-lg font-semibold text-guardian-light mb-3">Guardian Briefing</h3>
+          <p className="text-guardian-light/70 text-sm leading-relaxed">
+            Phishing attacks like this are often the first step in a larger cyber espionage campaign. By identifying the malicious email, you’ve helped prevent unauthorized access to sensitive government systems. Stay vigilant—new threats emerge daily, and the Guardian Network relies on your expertise to protect global digital spaces.
+          </p>
+        </div>
+
+        {/* Stats Section */}
+        <div className="mt-6 flex justify-between items-center text-guardian-light/70">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-5 h-5 text-cyan-400" />
+            <span className="text-sm">Guardians Engaged: 342</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-5 h-5 text-orange-500" />
+            <span className="text-sm">Threats Neutralized: 87</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Animation keyframes
+const styles = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+  .animate-pulse { animation: pulse 1.5s infinite; }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Challenge.txt;" and Globecontrols.txt "import React, { useState } from 'react';
+import { Info } from 'lucide-react';
+import Mascot from '../UI/Mascot';
+
+const GlobeControls: React.FC = () => {
+  const [showMascot, setShowMascot] = useState(false);
+
+  return (
+    <div className="absolute bottom-4 right-4 flex gap-2">
+      <button
+        className="p-2 rounded-full glassmorphism border border-guardian-cyan/20"
+        onClick={() => setShowMascot(true)}
+      >
+        <Info className="w-4 h-4 text-guardian-light" />
+      </button>
+      {showMascot && <Mascot message="Red dots are threats! Click me to hide." />}
+    </div>
+  );
+};
+
+export default GlobeControls;", GlobeStats.txt "
+import React from 'react';
+import { Shield } from 'lucide-react';
+import { ThreatData, GuardianData } from '@/utils/threatData';
+
+interface GlobeStatsProps {
+  threats: ThreatData[];
+  guardians: GuardianData[];
+}
+
+const GlobeStats: React.FC<GlobeStatsProps> = ({ threats, guardians }) => {
+  return (
+    <div className="absolute top-4 left-4 p-4 rounded-lg glassmorphism border border-guardian-cyan/20">
+      <h3 className="text-sm font-medium text-guardian-light mb-2">Global Threat Stats</h3>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-threat-ransomware"></div>
+          <span>Ransomware: {threats.filter(t => t.type === 'ransomware').length}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-threat-phishing"></div>
+          <span>Phishing: {threats.filter(t => t.type === 'phishing').length}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-threat-malware"></div>
+          <span>Malware: {threats.filter(t => t.type === 'malware').length}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-threat-ddos"></div>
+          <span>DDoS: {threats.filter(t => t.type === 'ddos').length}</span>
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-guardian-cyan/10">
+        <div className="flex items-center gap-1.5 text-xs">
+          <Shield className="w-3 h-3 text-guardian-cyan" />
+          <span>Active Guardians: {guardians.length}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GlobeStats;
+"GlobeVisualization.txt "// src/components/Globe/GlobeVisualization.tsx
+import React, { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { OrbitControl } from '@/components/Globe/OrbitControl.js'
+import { ThreatData, GuardianData, generateThreats, generateGuardians } from '@/utils/threatData';
+import ThreatCard from '../UI/ThreatCard';
+import { ArrowUpRight } from 'lucide-react';
+import GlobeStats from './GlobeStats';
+import GlobeControls from './GlobeControls';
+
+interface GlobeVisualizationProps {
+  className?: string;
+}
+
+const GlobeVisualization: React.FC<GlobeVisualizationProps> = ({ className = "" }) => {
+  const globeContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedThreat, setSelectedThreat] = React.useState<ThreatData | null>(null);
+  const [threats, setThreats] = React.useState<ThreatData[]>([]);
+  const [guardians, setGuardians] = React.useState<GuardianData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControl | null>(null);
+  const raycaster = useRef(new THREE.Raycaster());
+  const mouse = useRef(new THREE.Vector2());
+  const globeRef = useRef<THREE.Mesh | null>(null);
+  const beaconsRef = useRef<THREE.Sprite[]>([]);
+
+  useEffect(() => {
+    console.log('useEffect triggered (initial setup)');
+    const container = globeContainerRef.current;
+    if (!container) {
+      console.error('Container ref is null');
+      setLoading(false);
+      return;
+    }
+    console.log('Container found:', container);
+
+    // Initialize scene, camera, and renderer
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    cameraRef.current = camera;
+    camera.position.z = 60;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    rendererRef.current = renderer;
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+    console.log('Renderer appended to DOM');
+
+    // Globe
+    const globeRadius = 20;
+    const globeGeometry = new THREE.SphereGeometry(globeRadius, 32, 32);
+    const globeMaterial = new THREE.MeshBasicMaterial({ color: 0x1a2a44, wireframe: false });
+    const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+    globeRef.current = globe;
+    scene.add(globe);
+    console.log('Globe added to scene');
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(0, 0, 1).normalize();
+    scene.add(directionalLight);
+
+    // Controls
+    const controls = new OrbitControl(camera, renderer.domElement);
+    controlsRef.current = controls;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.5;
+
+    // Texture
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('/earth.jpg', (texture) => {
+      console.log('Texture loaded successfully');
+      globeMaterial.map = texture;
+      globeMaterial.needsUpdate = true;
+    }, undefined, (error) => {
+      console.error('Texture loading failed:', error);
+      globeMaterial.color.set(0x1a2a44);
+    });
+
+    // Fetch and add data with beacons
+    const fetchAndAddData = async () => {
+      setLoading(true);
+      try {
+        const threatData = generateThreats(30);
+        const guardianData = generateGuardians(20);
+        console.log('Generated data:', { threats: threatData.length, guardians: guardianData.length });
+
+        // Validate data
+        const validThreats = threatData.filter(t => t.latitude !== undefined && t.longitude !== undefined);
+        const validGuardians = guardianData.filter(g => g.latitude !== undefined && g.longitude !== undefined);
+
+        setThreats(validThreats);
+        setGuardians(validGuardians);
+        console.log('Set state:', { threatsLength: validThreats.length, guardiansLength: validGuardians.length });
+
+        // Clear existing beacons
+        beaconsRef.current.forEach(beacon => scene.remove(beacon));
+        beaconsRef.current = [];
+
+        // Add threat beacons as children of the globe
+        validThreats.forEach((item, index) => {
+          const phi = (90 - item.latitude) * (Math.PI / 180);
+          const theta = (item.longitude + 180) * (Math.PI / 180);
+          const x = -Math.sin(phi) * Math.cos(theta) * globeRadius;
+          const y = Math.cos(phi) * globeRadius;
+          const z = Math.sin(phi) * Math.sin(theta) * globeRadius;
+
+          const spriteMaterial = new THREE.SpriteMaterial({
+            color: new THREE.Color('#EF4444'), // Red for threats
+            transparent: true,
+            opacity: 0.8,
+          });
+          const sprite = new THREE.Sprite(spriteMaterial);
+          sprite.position.set(x, y, z);
+          sprite.scale.set(0.5, 0.5, 1);
+          sprite.userData = { type: 'threat', data: item };
+          globe.add(sprite); // Parent the sprite to the globe
+          beaconsRef.current.push(sprite);
+          console.log(`Added threat beacon ${index + 1} at (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`, item);
+        });
+
+        // Add guardian beacons as children of the globe
+        validGuardians.forEach((item, index) => {
+          const phi = (90 - item.latitude) * (Math.PI / 180);
+          const theta = (item.longitude + 180) * (Math.PI / 180);
+          const x = -Math.sin(phi) * Math.cos(theta) * globeRadius;
+          const y = Math.cos(phi) * globeRadius;
+          const z = Math.sin(phi) * Math.sin(theta) * globeRadius;
+
+          const spriteMaterial = new THREE.SpriteMaterial({
+            color: new THREE.Color('#64FFDA'), // Cyan for guardians
+            transparent: true,
+            opacity: 0.5,
+          });
+          const sprite = new THREE.Sprite(spriteMaterial);
+          sprite.position.set(x, y, z);
+          sprite.scale.set(0.4, 0.4, 1);
+          sprite.userData = { type: 'guardian' };
+          globe.add(sprite); // Parent the sprite to the globe
+          beaconsRef.current.push(sprite);
+          console.log(`Added guardian beacon ${index + 1} at (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`, item);
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+        console.log('Loading set to false');
+      }
+    };
+    fetchAndAddData();
+
+    // Click handling
+    const onMouseClick = (event: MouseEvent) => {
+      event.preventDefault();
+      if (!cameraRef.current || !sceneRef.current) return;
+
+      // Adjust mouse coordinates for raycasting
+      const rect = container.getBoundingClientRect();
+      mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.current.setFromCamera(mouse.current, cameraRef.current);
+      const intersects = raycaster.current.intersectObjects(globe.children, true); // Check globe's children
+
+      for (let i = 0; i < intersects.length; i++) {
+        if (intersects[i].object instanceof THREE.Sprite) {
+          const userData = intersects[i].object.userData;
+          if (userData.type === 'threat') {
+            setSelectedThreat(userData.data as ThreatData);
+            console.log('Threat selected:', userData.data);
+            break;
+          }
+        }
+      }
+    };
+
+    container.addEventListener('click', onMouseClick);
+
+    // Handle resize
+    const onWindowResize = () => {
+      if (!cameraRef.current || !rendererRef.current) return;
+      cameraRef.current.aspect = container.clientWidth / container.clientHeight;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(container.clientWidth, container.clientHeight);
+    };
+    window.addEventListener('resize', onWindowResize);
+
+    // Animation loop with rotation
+    const animate = () => {
+      requestAnimationFrame(animate);
+      if (controlsRef.current) controlsRef.current.update();
+      if (globeRef.current) globeRef.current.rotation.y += 0.001; // Globe rotates, beacons follow
+      if (rendererRef.current && cameraRef.current && sceneRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    };
+    animate();
+
+    // Cleanup
+    return () => {
+      container.removeEventListener('click', onMouseClick);
+      window.removeEventListener('resize', onWindowResize);
+      if (rendererRef.current) rendererRef.current.dispose();
+      if (container.contains(rendererRef.current?.domElement)) {
+        container.removeChild(rendererRef.current.domElement);
+      }
+      beaconsRef.current.forEach(beacon => globeRef.current?.remove(beacon));
+      console.log('Cleanup executed');
+    };
+  }, []);
+
+  console.log('Rendering GlobeVisualization', { loading, threatsLength: threats.length, guardiansLength: guardians.length, selectedThreat });
+
+  return (
+    <div className={`relative w-full max-w-6xl mx-auto ${className}`}>
+      <div ref={globeContainerRef} className="h-[70vh] overflow-hidden rounded-xl glassmorphism border border-guardian-cyan/20">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border-4 border-guardian-cyan/20 border-t-guardian-cyan animate-spin"></div>
+          </div>
+        ) : threats.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-guardian-light">
+            No data available
+          </div>
+        ) : (
+          <>
+            <GlobeStats threats={threats} guardians={guardians} />
+            <GlobeControls />
+            {selectedThreat && (
+              <div className="absolute right-4 bottom-12 max-w-sm w-full">
+                <ThreatCard threat={selectedThreat} setSelectedThreat={setSelectedThreat} />
+                <button className="mt-2 w-full text-xs flex items-center justify-center gap-1 p-2 rounded-md bg-guardian-cyan/10 text-guardian-cyan hover:bg-guardian-cyan/20 transition-colors">
+                  <span>Provide a solution to this threat!</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GlobeVisualization;" and GuardianBeacons "
+import React from 'react';
+import { GuardianData } from '@/utils/threatData';
+
+interface GuardianBeaconsProps {
+  guardians: GuardianData[];
+}
+
+const GuardianBeacons: React.FC<GuardianBeaconsProps> = ({ guardians }) => {
+  return (
+    <>
+      {guardians.map(guardian => {
+        const phi = (90 - guardian.latitude) * (Math.PI / 180);
+        const theta = (guardian.longitude + 180) * (Math.PI / 180);
+        
+        const x = -(Math.sin(phi) * Math.cos(theta)) * 50 + 50;
+        const y = (Math.cos(phi)) * 50 + 50;
+        
+        return (
+          <div 
+            key={guardian.id}
+            className="absolute rounded-full z-20 cursor-pointer"
+            style={{ 
+              left: `${x}%`, 
+              top: `${y}%`, 
+              width: '10px', 
+              height: '10px',
+              background: 'radial-gradient(circle, rgba(100, 255, 218, 0.8) 0%, rgba(100, 255, 218, 0.1) 70%)',
+              boxShadow: '0 0 10px #64FFDA'
+            }}
+          >
+            <div className="absolute inset-0 animate-ping rounded-full bg-guardian-cyan/50"></div>
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
+export default GuardianBeacons;
+" and ThreatBeacons.txt "
+import React from 'react';
+import { ThreatData } from '@/utils/threatData';
+
+interface ThreatBeaconsProps {
+  threats: ThreatData[];
+  onThreatSelect: (threat: ThreatData) => void;
+}
+
+const ThreatBeacons: React.FC<ThreatBeaconsProps> = ({ threats, onThreatSelect }) => {
+  return (
+    <>
+      {threats.map(threat => {
+        const phi = (90 - threat.latitude) * (Math.PI / 180);
+        const theta = (threat.longitude + 180) * (Math.PI / 180);
+        
+        const x = -(Math.sin(phi) * Math.cos(theta)) * 50 + 50;
+        const y = (Math.cos(phi)) * 50 + 50;
+        
+        let color;
+        switch(threat.type) {
+          case 'ransomware': color = 'var(--beacon-color, #EF4444)'; break;
+          case 'phishing': color = 'var(--beacon-color, #3B82F6)'; break;
+          case 'malware': color = 'var(--beacon-color, #F59E0B)'; break;
+          case 'ddos': color = 'var(--beacon-color, #EC4899)'; break;
+          default: color = 'var(--beacon-color, #6366F1)';
+        }
+        
+        return (
+          <div 
+            key={threat.id}
+            className="threat-beacon cursor-pointer"
+            style={{ 
+              left: `${x}%`, 
+              top: `${y}%`, 
+              width: `${threat.intensity * 1.5 + 5}px`, 
+              height: `${threat.intensity * 1.5 + 5}px`, 
+              '--beacon-color': color
+            } as React.CSSProperties}
+            onClick={() => onThreatSelect(threat)}
+          />
+        );
+      })}
+    </>
+  );
+};
+
+export default ThreatBeacons;
+" and GuardianBeacons "// src/components/Guardian/GuardianDashboard.tsx
+import React from 'react';
+import { useAnimatedMount, useCountUp } from '@/utils/animations';
+import { Shield, Award, Bell, TrendingUp, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { useContext } from 'react';
+import { UserContext } from '@/App'; // Adjust path based on your structure
+
+const GuardianDashboard: React.FC = () => {
+  const mounted = useAnimatedMount();
+  const guardianCount = useCountUp(12578);
+  const threatsNeutralized = useCountUp(87425);
+  const user = useContext(UserContext); // Access user state
+
+  return (
+    <div className={`max-w-6xl mx-auto px-4 py-8 transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="text-center mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-3">Guardian Network</h1>
+        <p className="text-lg text-guardian-light/80 max-w-2xl mx-auto">
+          Join a global community of cybersecurity guardians working together to protect the digital world.
+        </p>
+      </div>
+      
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 bg-guardian-dark border border-guardian-cyan/30">
+            <Shield className="w-7 h-7 text-guardian-cyan" />
+          </div>
+          <h3 className="text-2xl font-semibold text-guardian-light mb-1">{guardianCount.toLocaleString()}</h3>
+          <p className="text-guardian-light/70">Active Guardians</p>
+        </div>
+        
+        <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 bg-guardian-dark border border-guardian-cyan/30">
+            <Award className="w-7 h-7 text-guardian-cyan" />
+          </div>
+          <h3 className="text-2xl font-semibold text-guardian-light mb-1">{threatsNeutralized.toLocaleString()}</h3>
+          <p className="text-guardian-light/70">Threats Neutralized</p>
+        </div>
+        
+        <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 bg-guardian-dark border border-guardian-cyan/30">
+            <Bell className="w-7 h-7 text-guardian-cyan" />
+          </div>
+          <h3 className="text-2xl font-semibold text-guardian-light mb-1">92%</h3>
+          <p className="text-guardian-light/70">Alert Accuracy</p>
+        </div>
+      </div>
+      
+      {/* Guardian features */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-semibold gradient-text mb-6 text-center">How Guardians Help</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 group">
+            <div className="mb-4 w-12 h-12 rounded-lg flex items-center justify-center bg-guardian-dark border border-guardian-cyan/30 group-hover:scale-110 transition-transform">
+              <Bell className="w-6 h-6 text-guardian-cyan" />
+            </div>
+            <h3 className="text-xl font-medium text-guardian-light mb-2">Report Threats</h3>
+            <p className="text-guardian-light/70">Submit suspicious emails, websites, and activities to help protect the community. Your reports are analyzed and added to our threat database.</p>
+          </div>
+          
+          <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 group">
+            <div className="mb-4 w-12 h-12 rounded-lg flex items-center justify-center bg-guardian-dark border border-guardian-cyan/30 group-hover:scale-110 transition-transform">
+              <UserPlus className="w-6 h-6 text-guardian-cyan" />
+            </div>
+            <h3 className="text-xl font-medium text-guardian-light mb-2">Support Recovery</h3>
+            <p className="text-guardian-light/70">Help victims recover from cyberattacks with guidance and resources. Experienced guardians can volunteer for peer support in recovery rooms.</p>
+          </div>
+          
+          <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 group">
+            <div className="mb-4 w-12 h-12 rounded-lg flex items-center justify-center bg-guardian-dark border border-guardian-cyan/30 group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-6 h-6 text-guardian-cyan" />
+            </div>
+            <h3 className="text-xl font-medium text-guardian-light mb-2">Validate Predictions</h3>
+            <p className="text-guardian-light/70">Review and validate AI threat predictions based on your expertise or observations. Help improve the accuracy of our forecast system.</p>
+          </div>
+          
+          <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6 group">
+            <div className="mb-4 w-12 h-12 rounded-lg flex items-center justify-center bg-guardian-dark border border-guardian-cyan/30 group-hover:scale-110 transition-transform">
+              <Shield className="w-6 h-6 text-guardian-cyan" />
+            </div>
+            <h3 className="text-xl font-medium text-guardian-light mb-2">Share Defenses</h3>
+            <p className="text-guardian-light/70">Contribute defensive tactics, scripts, or configurations that can help others protect themselves from emerging threats.</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* CTA with Additional Links */}
+      <div className="text-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+          <Button asChild>
+            <Link to="/challenge" className="bg-guardian-cyan text-guardian-dark hover:bg-guardian-cyan/80">
+              Start Challenge
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/leaderboard" className="text-guardian-cyan hover:bg-guardian-cyan/20">
+              View Leaderboard
+            </Link>
+          </Button>
+          {user && (
+            <Button asChild variant="outline">
+              <Link to="/profile" className="text-guardian-cyan hover:bg-guardian-cyan/20">
+                View Profile
+              </Link>
+            </Button>
+          )}
+          <Button asChild>
+            <Link to="/join" className="cyber-button px-8 py-3 text-lg">
+              Become a Guardian
+            </Link>
+          </Button>
+        </div>
+        <p className="mt-3 text-sm text-guardian-light/60">
+          Join a global movement of cybersecurity defenders
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default GuardianDashboard;"
+import React, { useState } from 'react';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useNavigate } from 'react-router-dom';
+import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Shield, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Guardian name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }).regex(/[A-Z]/, {
+    message: "Password must contain at least one uppercase letter."
+  }).regex(/[0-9]/, {
+    message: "Password must contain at least one number."
+  }),
+  motivation: z.string().optional(),
+});
+
+const GuardianForm = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [guardianName, setGuardianName] = useState("");
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      motivation: "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Sign up the user with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            name: values.name,
+            motivation: values.motivation
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Store guardian name for success message
+      setGuardianName(values.name);
+      setShowSuccessDialog(true);
+      
+      // Reset form
+      form.reset();
+      
+    } catch (error) {
+      console.error('Error during registration:', error);
+      toast({
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
+    navigate('/guardian');
+  };
+
+  return (
+    <div className="min-h-screen bg-guardian-dark py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <div className="text-center mb-8">
+          <Shield className="mx-auto h-12 w-12 text-guardian-cyan" />
+          <h2 className="mt-6 text-3xl font-bold tracking-tight gradient-text">
+            Join the Guardian Network
+          </h2>
+          <p className="mt-2 text-sm text-guardian-light/70">
+            Help protect the digital world and earn rewards for your contributions
+          </p>
+        </div>
+
+        <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Guardian Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your guardian name" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs text-guardian-light/60">
+                      This will be your public identity in the Guardian Network
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="you@example.com" type="email" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs text-guardian-light/60">
+                      We'll never share your email with others
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Create a secure password" type="password" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs text-guardian-light/60">
+                      At least 8 characters with one uppercase letter and one number
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="motivation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Why do you want to protect the web? (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Share your motivation" 
+                        className="min-h-[100px] resize-none bg-guardian-dark/50 border-guardian-cyan/30 text-guardian-light"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                className="w-full cyber-button"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>Become a Guardian</>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </div>
+      </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="bg-guardian-dark border border-guardian-cyan/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl gradient-text">Welcome to the Guardian Network!</DialogTitle>
+            <DialogDescription className="text-guardian-light text-base pt-2">
+              <div className="flex flex-col space-y-4">
+                <p>Thank you for joining us, <span className="text-guardian-cyan font-medium">{guardianName}</span>! Together we'll make the digital world safer.</p>
+                <p>Your account has been created. You can now access the Guardian dashboard and start protecting the web.</p>
+                <div className="border-t border-guardian-cyan/20 pt-4">
+                  <Button 
+                    onClick={handleSuccessDialogClose} 
+                    className="w-full cyber-button"
+                  >
+                    Go to Guardian Dashboard
+                  </Button>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default GuardianForm;
+"and Header.txt "// src/components/Header.tsx
+import React, { useState } from 'react';
+import { useAnimatedMount } from '@/utils/animations';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Globe, User, HeartPulse, Menu, X, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+
+interface HeaderProps {
+  user?: any;
+  handleLogout: () => void;
+  navigate: (path: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ user, handleLogout, navigate }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mounted = useAnimatedMount();
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+      } glassmorphism shadow-sm`}
+      style={{
+        backdropFilter: 'blur(15px)',
+        backgroundColor: 'rgba(10, 25, 47, 0.6)',
+        borderBottom: '1px solid rgba(100, 255, 218, 0.1)',
+      }}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-20 items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/30 to-blue-600/30 rounded-full animate-pulse-glow transition-all duration-300 group-hover:scale-110"></div>
+                <Shield className="w-6 h-6 text-cyan-400 relative z-10" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+                  Guardian Sanctuary
+                </h1>
+                <p className="text-xs text-silver-300">The Pulse of Protection</p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="hidden md:flex items-center space-x-6">
+            <nav className="flex items-center space-x-4">
+              <NavLink id="header-global-pulse" to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" />
+              <NavLink id="header-guardian-network" to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" />
+              <NavLink id="header-sanctuary" to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" />
+            </nav>
+            <div className="flex items-center space-x-3">
+              {!user ? (
+                <>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="rounded-full px-4 py-2 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/register">Sign Up</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    className="rounded-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/login">Login</Link>
+                  </Button>
+                </>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Avatar
+                    onClick={() => navigate('/profile')}
+                    className="cursor-pointer hover:opacity-90 transition-all duration-300 rounded-full border-2 border-cyan-400/50"
+                  >
+                    <AvatarImage
+                      src={user.user_metadata?.avatar_url || `https://api.dicebear.com/6.x/initials/svg?seed=${user.user_metadata?.name || user.email}`}
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-gray-800 to-gray-900 text-cyan-400">
+                      {user.user_metadata?.name?.charAt(0) || user.email.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="rounded-full px-3 py-1.5 text-silver-300 border-silver-300/50 hover:bg-silver-300/10 hover:border-silver-300 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <LogOut className="w-4 h-4 mr-1" /> Logout
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full px-3 py-1.5 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/challenge">Challenge</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="md:hidden">
+            <Button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-full text-silver-300 hover:bg-cyan-400/10 transition-all duration-300 shadow-sm hover:shadow-glow"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </Button>
+          </div>
+        </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden glassmorphism border-t border-cyan-400/20">
+            <div className="flex flex-col px-4 py-4 space-y-2">
+              <MobileNavLink id="header-global-pulse-mobile" to="/global-pulse" icon={<Globe className="w-5 h-5" />} label="Global Pulse" onClick={() => setMobileMenuOpen(false)} />
+              <MobileNavLink id="header-guardian-network-mobile" to="/guardian" icon={<User className="w-5 h-5" />} label="Guardian Network" onClick={() => setMobileMenuOpen(false)} />
+              <MobileNavLink id="header-sanctuary-mobile" to="/sanctuary" icon={<HeartPulse className="w-5 h-5" />} label="Sanctuary" onClick={() => setMobileMenuOpen(false)} />
+              {!user ? (
+                <>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full mt-2 rounded-full px-4 py-2 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    className="w-full mt-2 rounded-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col space-y-2 mt-2">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full rounded-full px-4 py-2 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                    className="w-full rounded-full px-3 py-1.5 text-silver-300 border-silver-300/50 hover:bg-silver-300/10 hover:border-silver-300 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <LogOut className="w-4 h-4 mr-1" /> Logout
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-full px-3 py-1.5 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+                  >
+                    <Link to="/challenge" onClick={() => setMobileMenuOpen(false)}>Challenge</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+};
+
+interface NavLinkProps {
+  id?: string;
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ id, to, icon, label }) => {
+  return (
+    <Link
+      id={id}
+      to={to}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-silver-300 hover:bg-cyan-400/10 hover:text-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+    >
+      {icon}
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
+};
+
+interface MobileNavLinkProps extends NavLinkProps {
+  onClick: () => void;
+}
+
+const MobileNavLink: React.FC<MobileNavLinkProps> = ({ id, to, icon, label, onClick }) => {
+  return (
+    <Link
+      id={id}
+      to={to}
+      className="flex items-center gap-2 p-2 rounded-lg text-silver-300 hover:bg-cyan-400/10 hover:text-cyan-400 transition-all duration-300 shadow-sm hover:shadow-glow"
+      onClick={onClick}
+    >
+      {icon}
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
+};
+
+const styles = `
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-pulse-glow { animation: pulseGlow 2s infinite ease-in-out; }
+  .shadow-glow { box-shadow: 0 0 15px rgba(100, 255, 218, 0.3); }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Header;"and Layout.txt "// src/components/Layout/Layout.tsx
+import React, { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { UserContext } from '../../App';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { LogOut, Shield, Globe, Zap, ChevronRight, Mail, Code, Lock } from 'lucide-react';
+import Header from './Header';
+
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const user = useContext(UserContext);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Error logging out:', error.message);
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-guardian-dark via-gray-900 to-black text-guardian-light flex flex-col">
+      <Header user={user} handleLogout={handleLogout} navigate={navigate} />
+      <main className="flex-1 pt-24 p-6">{children}</main>
+      <footer className="relative bg-guardian-dark/90 border-t border-cyan-400/30 p-8 text-center shadow-[0_-10px_30px_rgba(100,255,218,0.2)]">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/metal.png')] opacity-10 animate-subtle-move"></div>
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+                Command Links
+              </h3>
+              <div className="flex flex-col gap-3">
+                <Button
+                  asChild
+                  id="footer-join-network"
+                  variant="outline"
+                  className="group w-full py-3 text-cyan-400 border-cyan-400/50 rounded-md hover:bg-cyan-400/20 hover:border-cyan-400 transition-all duration-300 shadow-md hover:shadow-glow-metal"
+                >
+                  <Link to="/join" className="flex items-center justify-between">
+                    <span>Join the Network</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  id="footer-leaderboard"
+                  variant="outline"
+                  className="group w-full py-3 text-cyan-400 border-cyan-400/50 rounded-md hover:bg-cyan-400/20 hover:border-cyan-400 transition-all duration-300 shadow-md hover:shadow-glow-metal"
+                >
+                  <Link to="/leaderboard" className="flex items-center justify-between">
+                    <span>View Leaderboard</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  id="footer-challenge"
+                  variant="outline"
+                  className="group w-full py-3 text-cyan-400 border-cyan-400/50 rounded-md hover:bg-cyan-400/20 hover:border-cyan-400 transition-all duration-300 shadow-md hover:shadow-glow-metal"
+                >
+                  <Link to="/challenge" className="flex items-center justify-between">
+                    <span>Start Challenge</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+                Network Pulse
+              </h3>
+              <div className="space-y-4 text-silver-300/80">
+                <div className="flex items-center justify-center gap-3">
+                  <Shield className="w-6 h-6 text-cyan-400 animate-pulse-metal" />
+                  <span>Active Guardians: 35</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <Globe className="w-6 h-6 text-cyan-400 animate-pulse-metal" />
+                  <span>Sectors Secured: 2,000+</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <Zap className="w-6 h-6 text-cyan-400 animate-pulse-metal" />
+                  <span>Threats Neutralized: 1,200</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+                Sanctuary Hub
+              </h3>
+              <div className="flex flex-col gap-3 text-silver-300/80">
+                <a
+                  href="mailto:support@guardiansanctuary.net"
+                  className="flex items-center justify-center gap-2 hover:text-cyan-400 transition-colors duration-300"
+                >
+                  <Mail className="w-5 h-5" />
+                  <span>Contact Support</span>
+                </a>
+                <a
+                  href="https://github.com/vieira-klgwn/guardians"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 hover:text-cyan-400 transition-colors duration-300"
+                >
+                  <Code className="w-5 h-5" />
+                  <span>Open Source</span>
+                </a>
+                <Link
+                  to="/terms"
+                  className="flex items-center justify-center gap-2 hover:text-cyan-400 transition-colors duration-300"
+                >
+                  <Lock className="w-5 h-5" />
+                  <span>Terms & Security</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-cyan-400/20 pt-6">
+            <p className="text-sm text-silver-300/70 flex items-center justify-center gap-2">
+              <Shield className="w-4 h-4 text-cyan-400" />
+              © 2025 Guardian Sanctuary | Forged for the Future
+            </p>
+            <p className="text-xs text-silver-300/50 mt-2">
+              Made by Vieira Ntwali Isimbi | All rights reserved
+            </p>
+          </div>
+        </div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+      </footer>
+    </div>
+  );
+};
+
+const styles = `
+  @keyframes subtleMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 100px 100px; }
+  }
+  @keyframes pulseMetal {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+  }
+  .animate-subtle-move { animation: subtleMove 20s infinite linear; }
+  .animate-pulse-metal { animation: pulseMetal 2s infinite ease-in-out; }
+  .shadow-glow-metal { box-shadow: 0 0 20px rgba(100, 255, 218, 0.4), 0 0 5px rgba(100, 255, 218, 0.2); }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Layout;" and LeaderBoard.txt "// src/components/Leaderboard/Leaderboard.tsx
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Award, Shield, Zap, Search, Clock, ChevronRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+
+const Leaderboard: React.FC = () => {
+  const [guardians, setGuardians] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const fetchGuardians = async () => {
+      setLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from('guardians')
+        .select('*')
+        .order('score', { ascending: false }); // Sort by score descending
+      if (fetchError) setError(fetchError.message);
+      else setGuardians(data || []);
+      setLoading(false);
+    };
+    fetchGuardians();
+  }, []);
+
+  const getRankIcon = (rank: number) => {
+    if (rank <= 3) return <Award className="w-6 h-6 text-yellow-400" />;
+    if (rank <= 10) return <Award className="w-6 h-6 text-silver-300" />;
+    return <Shield className="w-6 h-6 text-cyan-400" />;
+  };
+
+  const getRankLabel = (rank: number) => {
+    if (rank === 1) return 'Champion Guardian';
+    if (rank <= 3) return 'Elite Guardian';
+    if (rank <= 10) return 'Veteran Guardian';
+    return 'Guardian';
+  };
+
+  const filteredGuardians = guardians.filter((guardian) =>
+    guardian.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="flex items-center space-x-3 text-silver-300">
+          <div className="w-8 h-8 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="text-red-400 text-center animate-pulse">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 p-6 flex flex-col items-center justify-start">
+      <div className="max-w-4xl w-full bg-guardian-dark/80 rounded-xl shadow-lg p-8 border border-cyan-400/20 glassmorphism animate-fade-in">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 space-y-4 sm:space-y-0">
+          <div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+              Guardian Leaderboard
+            </h2>
+            <p className="text-silver-300 text-sm mt-1">
+              Top defenders of the digital realm—ranked by valor and skill.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name..."
+              className="w-full pl-10 pr-3 py-2 bg-guardian-dark/50 border border-cyan-400/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-300 text-silver-300 placeholder-silver-300/50"
+            />
+          </div>
+        </div>
+
+        {/* Global Threat Status */}
+        <div className="mb-8 p-4 bg-gradient-to-r from-cyan-400/10 to-blue-600/10 rounded-lg border border-cyan-400/20">
+          <h3 className="text-lg font-semibold text-silver-300 mb-2">Global Threat Overview</h3>
+          <div className="flex justify-between text-sm text-silver-300/80">
+            <span>Active Threats: 12</span>
+            <span>Guardians Online: 320</span>
+            <span>Threats Neutralized Today: 45</span>
+          </div>
+        </div>
+
+        {/* Leaderboard Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b-2 border-cyan-400/20">
+                <th className="p-3 text-silver-300 font-semibold">Rank</th>
+                <th className="p-3 text-silver-300 font-semibold">Guardian</th>
+                <th className="p-3 text-silver-300 font-semibold">Score</th>
+                <th className="p-3 text-silver-300 font-semibold">Threats Stopped</th>
+                <th className="p-3 text-silver-300 font-semibold">Joined</th>
+                <th className="p-3 text-silver-300 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGuardians.length > 0 ? (
+                filteredGuardians.map((guardian, index) => (
+                  <tr key={guardian.id} className="border-b border-cyan-400/10 hover:bg-guardian-dark/50 transition-all duration-300">
+                    <td className="p-3 text-cyan-400 font-medium">{index + 1}</td>
+                    <td className="p-3 flex items-center space-x-3">
+                      <Avatar className="w-8 h-8 border border-cyan-400/50">
+                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${guardian.name}`} />
+                        <AvatarFallback className="bg-gray-800 text-cyan-400">
+                          {guardian.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-silver-300">{guardian.name}</span>
+                    </td>
+                    <td className="p-3 text-cyan-400 font-medium">{guardian.score || 0}</td>
+                    <td className="p-3 text-cyan-400 font-medium">{guardian.threats_stopped || 0}</td>
+                    <td className="p-3 text-silver-300/70">
+                      {new Date(guardian.created_at || Date.now()).toLocaleDateString()}
+                    </td>
+                    <td className="p-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-3 py-1 text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 transition-all duration-300 shadow-sm hover:shadow-glow"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-silver-300/70">
+                    No guardians found matching your search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="mt-8 p-4 bg-guardian-dark/50 rounded-lg border border-cyan-400/20">
+          <h3 className="text-lg font-semibold text-silver-300 mb-3">Recent Guardian Activity</h3>
+          <ul className="space-y-2 text-sm text-silver-300/80">
+            <li><Clock className="w-4 h-4 text-cyan-400 inline mr-2" /> Guardian "Alex" neutralized a phishing threat 5 mins ago.</li>
+            <li><Zap className="w-4 h-4 text-cyan-400 inline mr-2" /> Guardian "Sara" earned 50 points on a challenge 12 mins ago.</li>
+            <li><Shield className="w-4 h-4 text-cyan-400 inline mr-2" /> Guardian "Mike" joined the network 1 hour ago.</li>
+          </ul>
+        </div>
+
+        {/* Call to Action */}
+        <div className="mt-8 flex justify-center">
+          <Button
+            onClick={() => window.location.href = '/challenge'}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-md hover:shadow-glow"
+          >
+            <span>Join the Fight</span>
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Animation and glow keyframes
+const styles = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+  .animate-pulse { animation: pulse 1.5s infinite; }
+  .animate-spin { animation: spin 1s linear infinite; }
+  .shadow-glow { box-shadow: 0 0 15px rgba(100, 255, 218, 0.3); }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Leaderboard;"and Profile.txt "// src/components/Profile/Profile.tsx
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Shield, Star, Zap, Award, ChevronRight } from 'lucide-react';
+
+const Profile: React.FC = () => {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setError(userError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (userData.user) {
+        const { data, error: fetchError } = await supabase
+          .from('guardians')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .single();
+        if (fetchError) setError(fetchError.message);
+        else setProfile(data);
+      }
+      setLoading(false);
+    };
+    fetchProfile();
+  }, []);
+
+  const getRank = (score: number) => {
+    if (score >= 200) return { rank: 'Gold Guardian', nextThreshold: 500, icon: <Award className="w-6 h-6 text-yellow-400" /> };
+    if (score >= 100) return { rank: 'Silver Guardian', nextThreshold: 200, icon: <Award className="w-6 h-6 text-silver-300" /> };
+    if (score >= 50) return { rank: 'Bronze Guardian', nextThreshold: 100, icon: <Award className="w-6 h-6 text-orange-400" /> };
+    return { rank: 'Novice Guardian', nextThreshold: 50, icon: <Award className="w-6 h-6 text-gray-500" /> };
+  };
+
+  const getProgress = (score: number, nextThreshold: number) => {
+    return Math.min((score / nextThreshold) * 100, 100);
+  };
+
+  const getMotivationalQuote = () => {
+    const quotes = [
+      "Protect the digital frontier—your vigilance saves lives.",
+      "Every threat stopped is a victory for humanity.",
+      "Guardians like you are the shield of the future.",
+      "Stay sharp, stay strong—the network depends on you.",
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="flex items-center space-x-3 text-silver-300">
+          <div className="w-8 h-8 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="text-red-400 text-center animate-pulse">{error}</div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="text-silver-300 text-center">No profile found.</div>
+      </div>
+    );
+  }
+
+  const { rank, nextThreshold, icon: rankIcon } = getRank(profile.score || 0);
+  const progress = getProgress(profile.score || 0, nextThreshold);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 p-6 flex flex-col items-center justify-center">
+      <div className="max-w-2xl w-full bg-guardian-dark/80 rounded-xl shadow-lg p-8 border border-cyan-400/20 glassmorphism animate-fade-in">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Avatar className="w-16 h-16 border-2 border-cyan-400/50 shadow-glow">
+              <AvatarImage
+                src={`https://api.dicebear.com/6.x/initials/svg?seed=${profile.name || profile.email}`}
+              />
+              <AvatarFallback className="bg-gradient-to-br from-gray-800 to-gray-900 text-cyan-400">
+                {profile.name?.charAt(0) || profile.email?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+                {profile.name}
+              </h2>
+              <p className="text-silver-300 text-sm">{profile.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {rankIcon}
+            <span className="text-silver-300 text-sm font-medium">{rank}</span>
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <div className="p-4 bg-guardian-dark/50 rounded-lg border border-cyan-400/20 shadow-sm">
+            <div className="flex items-center space-x-2 mb-2">
+              <Star className="w-5 h-5 text-cyan-400" />
+              <h3 className="text-lg font-semibold text-silver-300">Score</h3>
+            </div>
+            <p className="text-2xl font-bold text-cyan-400">{profile.score || 0} points</p>
+          </div>
+          <div className="p-4 bg-guardian-dark/50 rounded-lg border border-cyan-400/20 shadow-sm">
+            <div className="flex items-center space-x-2 mb-2">
+              <Shield className="w-5 h-5 text-cyan-400" />
+              <h3 className="text-lg font-semibold text-silver-300">Threats Stopped</h3>
+            </div>
+            <p className="text-2xl font-bold text-cyan-400">{profile.threats_stopped || 0}</p>
+          </div>
+        </div>
+
+        {/* Progress to Next Rank */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-silver-300 mb-3">Progress to Next Rank</h3>
+          <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400 to-blue-600 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-sm text-silver-300 mt-2">
+            {profile.score || 0} / {nextThreshold} points to reach {rank === 'Gold Guardian' ? 'Platinum Guardian' : rank === 'Silver Guardian' ? 'Gold Guardian' : 'Silver Guardian'}
+          </p>
+        </div>
+
+        {/* Achievements Section */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-silver-300 mb-4">Achievements</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {profile.score >= 50 && (
+              <div className="flex items-center space-x-3 p-3 bg-guardian-dark/50 rounded-lg border border-orange-400/20">
+                <Award className="w-6 h-6 text-orange-400" />
+                <span className="text-sm text-silver-300">Bronze Guardian</span>
+              </div>
+            )}
+            {profile.score >= 100 && (
+              <div className="flex items-center space-x-3 p-3 bg-guardian-dark/50 rounded-lg border border-silver-300/20">
+                <Award className="w-6 h-6 text-silver-300" />
+                <span className="text-sm text-silver-300">Silver Guardian</span>
+              </div>
+            )}
+            {profile.score >= 200 && (
+              <div className="flex items-center space-x-3 p-3 bg-guardian-dark/50 rounded-lg border border-yellow-400/20">
+                <Award className="w-6 h-6 text-yellow-400" />
+                <span className="text-sm text-silver-300">Gold Guardian</span>
+              </div>
+            )}
+            {profile.threats_stopped >= 10 && (
+              <div className="flex items-center space-x-3 p-3 bg-guardian-dark/50 rounded-lg border border-cyan-400/20">
+                <Zap className="w-6 h-6 text-cyan-400" />
+                <span className="text-sm text-silver-300">Threat Slayer</span>
+              </div>
+            )}
+            {(!profile.score || profile.score < 50) && !profile.threats_stopped && (
+              <p className="text-sm text-silver-300/70 col-span-2">No achievements yet. Complete challenges to earn badges!</p>
+            )}
+          </div>
+        </div>
+
+        {/* Motivation Section */}
+        <div className="mb-8 p-4 bg-guardian-dark/50 rounded-lg border border-cyan-400/20">
+          <h3 className="text-lg font-semibold text-silver-300 mb-3">Your Motivation</h3>
+          <p className="text-sm text-silver-300/80 italic">
+            {profile.motivation || 'Not set. Share your drive to protect the digital world!'}
+          </p>
+        </div>
+
+        {/* Motivational Quote Section */}
+        <div className="p-4 bg-gradient-to-r from-cyan-400/10 to-blue-600/10 rounded-lg border border-cyan-400/20">
+          <h3 className="text-lg font-semibold text-silver-300 mb-3">Guardian’s Inspiration</h3>
+          <p className="text-sm text-silver-300/80 italic">{getMotivationalQuote()}</p>
+        </div>
+
+        {/* Call to Action */}
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => window.location.href = '/challenge'}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-md hover:shadow-glow"
+          >
+            <span>Take on a Challenge</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Animation and glow keyframes
+const styles = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+  .animate-pulse { animation: pulse 1.5s infinite; }
+  .shadow-glow { box-shadow: 0 0 15px rgba(100, 255, 218, 0.3); }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Profile;" and this very important file SanctuaryToolkit.txt "import React, { useState } from 'react';
+import { useAnimatedMount } from '@/utils/animations';
+import { 
+  Lock, Shield, Smartphone, CreditCard, 
+  Mail, LifeBuoy, MessageSquare, Clock, CheckCircle, Search
+} from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client with your project details
+const supabase = createClient(
+  'https://musqwfamtlcflnfucqwy.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11c3F3ZmFtdGxjZmxuZnVjcXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyODU3MDgsImV4cCI6MjA1Nzg2MTcwOH0.Vx2zAO1Bviv3n428KsiyzqSIqj5UZB1j8WE84vrqOAI'
+);
+
+const incidentTypes = [
+  { id: 'check-vulnerability', name: 'Check Vulnerability of Your System', icon: <Search className="w-5 h-5" /> },
+  { id: 'account-hack', name: 'Account Compromise', icon: <Lock className="w-5 h-5" /> },
+  { id: 'ransomware', name: 'Ransomware', icon: <Shield className="w-5 h-5" /> },
+  { id: 'device-hack', name: 'Device Compromise', icon: <Smartphone className="w-5 h-5" /> },
+  { id: 'financial', name: 'Financial Fraud', icon: <CreditCard className="w-5 h-5" /> },
+  { id: 'phishing', name: 'Phishing Attack', icon: <Mail className="w-5 h-5" /> },
+];
+
+const SanctuaryToolkit: React.FC = () => {
+  const mounted = useAnimatedMount();
+  const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
+  const [recoveryStep, setRecoveryStep] = useState(0);
+  const [targetUrl, setTargetUrl] = useState('');
+  const [scanResults, setScanResults] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const getRecoverySteps = () => {
+    switch (selectedIncident) {
+      case 'check-vulnerability':
+        if (recoveryStep === 0) {
+          return [{
+            title: 'Enter your app URL',
+            description: 'Type the web address of your app to check for problems.',
+            action: 'Start Scan',
+            customAction: () => scanVulnerabilities(),
+          }];
+        } else if (recoveryStep === 1) {
+          return [{
+            title: 'See scan results',
+            description: 'Look at the problems found in your app.',
+            action: 'Next',
+            customAction: () => setRecoveryStep(2),
+          }];
+        } else if (recoveryStep === 2 && scanResults.length > 0) {
+          const steps = [];
+          scanResults.forEach(vuln => {
+            if (vuln.includes('XSS')) {
+              steps.push({
+                title: 'Fix XSS problem',
+                description: 'Clean your app code to stop bad scripts from running.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/xss/',
+              });
+            } else if (vuln.includes('SQL Injection')) {
+              steps.push({
+                title: 'Fix SQL Injection problem',
+                description: 'Use safe code to stop bad database attacks.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/SQL_Injection',
+              });
+            } else if (vuln.includes('Directory Traversal')) {
+              steps.push({
+                title: 'Fix Directory Traversal problem',
+                description: 'Block access to secret files in your app.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Path_Traversal',
+              });
+            } else if (vuln.includes('Command Injection')) {
+              steps.push({
+                title: 'Fix Command Injection problem',
+                description: 'Stop bad commands from running on your server.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-community/attacks/Command_Injection',
+              });
+            } else if (vuln.includes('Server Misconfiguration')) {
+              steps.push({
+                title: 'Fix Server Misconfiguration problem',
+                description: 'Hide private pages and fix server settings.',
+                action: 'Learn How',
+                actionLink: 'https://owasp.org/www-project-secure-headers/',
+              });
+            }
+          });
+          return steps.length > 0 ? steps : [{
+            title: 'No problems found',
+            description: 'Your app looks safe! Keep it updated.',
+            action: 'Finish',
+            customAction: () => setSelectedIncident(null),
+          }];
+        }
+        return [];
+      case 'account-hack':
+        return [
+          { title: 'Change your password', description: 'Make a new strong password with letters, numbers, and symbols on another device.', action: 'Change Password', actionLink: '#' },
+          { title: 'Turn on two-step check', description: 'Add extra safety with two-step login if you can.', action: 'Turn On Two-Step', actionLink: '#' },
+          { title: 'Look for bad activity', description: 'Check your account for strange things and report them.', action: 'Check Activity', actionLink: '#' },
+          { title: 'Change secret questions', description: 'Update your security questions to stop others from getting in.', action: 'Update Questions', actionLink: '#' },
+          { title: 'Fix other accounts', description: 'Change passwords on other accounts if you used the same one.', action: 'Check Passwords', actionLink: '#' },
+        ];
+      case 'ransomware':
+        return [
+          { title: 'Cut off the device', description: 'Turn off internet on the device to stop the attack from spreading.', action: 'Cut Off Guide', actionLink: '#' },
+          { title: 'Tell the police', description: 'Report the attack to police and online safety groups.', action: 'Report Attack', actionLink: '#' },
+          { title: 'Check locked files', description: 'Find out which files are locked and see if you have copies saved.', action: 'Backup Guide', actionLink: '#' },
+          { title: 'Look for unlock tools', description: 'Don’t pay money. Look for free unlock tools from safe websites.', action: 'Unlock Tools', actionLink: '#' },
+          { title: 'Clean and fix', description: 'Remove the attack and use your saved copies to fix things.', action: 'Fix Guide', actionLink: '#' },
+        ];
+      case 'device-hack':
+        return [
+          { title: 'Turn off internet', description: 'Disconnect your device from the internet right away.', action: 'Disconnect Guide', actionLink: '#' },
+          { title: 'Run a virus check', description: 'Use antivirus software to find and remove bad things.', action: 'Download Antivirus', actionLink: '#' },
+          { title: 'Change passwords', description: 'Make new passwords for all accounts on the device.', action: 'Change Passwords', actionLink: '#' },
+          { title: 'Update your device', description: 'Install the latest updates to fix weak spots.', action: 'Update Guide', actionLink: '#' },
+          { title: 'Check for damage', description: 'Look at your files and accounts for anything strange.', action: 'Check Damage', actionLink: '#' },
+        ];
+      case 'financial':
+        return [
+          { title: 'Call your bank', description: 'Tell your bank or card company about the problem fast.', action: 'Contact Bank', actionLink: '#' },
+          { title: 'Freeze your cards', description: 'Stop your cards so no one can use them.', action: 'Freeze Cards', actionLink: '#' },
+          { title: 'Check your money', description: 'Look at your bank account for bad payments.', action: 'Check Account', actionLink: '#' },
+          { title: 'Report to police', description: 'Tell the police about the money theft.', action: 'Report Fraud', actionLink: '#' },
+          { title: 'Watch your credit', description: 'Check your credit report for strange things.', action: 'Credit Guide', actionLink: '#' },
+        ];
+      case 'phishing':
+        return [
+          { title: 'Don’t click links', description: 'Avoid clicking anything in the bad email or message.', action: 'Learn More', actionLink: '#' },
+          { title: 'Change passwords', description: 'Make new passwords if you gave info by mistake.', action: 'Change Passwords', actionLink: '#' },
+          { title: 'Tell the company', description: 'Report the fake message to the real company.', action: 'Report Phishing', actionLink: '#' },
+          { title: 'Check your accounts', description: 'Look at your accounts for anything wrong.', action: 'Check Accounts', actionLink: '#' },
+          { title: 'Learn to spot fakes', description: 'Find out how to see fake messages next time.', action: 'Phishing Guide', actionLink: '#' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const scanVulnerabilities = async () => {
+    if (!targetUrl) {
+      setScanResults(['Please enter a URL first!']);
+      return;
+    }
+
+    setIsScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('scanner', {
+        body: JSON.stringify({ url: targetUrl }),
+      });
+      if (error) {
+        setScanResults([error.message || 'Scan failed']);
+      } else if (data.error) {
+        setScanResults([data.error]);
+      } else {
+        setScanResults(data.vulnerabilities.length > 0 ? data.vulnerabilities : ['No problems found!']);
+      }
+      setRecoveryStep(1);
+    } catch (error) {
+      setScanResults(['Scan failed. Check your connection or URL.']);
+    }
+    setIsScanning(false);
+  };
+
+  return (
+    <div className={`max-w-6xl mx-auto px-4 py-8 transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="text-center mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-3">Sanctuary Toolkit</h1>
+        <p className="text-lg text-guardian-light/80 max-w-2xl mx-auto">
+          Your safe place to fix online problems. Get help to recover and stay safe.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-4">
+          <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6">
+            <h2 className="text-xl font-medium text-guardian-light mb-4">What happened?</h2>
+            <p className="text-sm text-guardian-light/70 mb-6">
+              Pick the problem you have to get help steps.
+            </p>
+
+            <div className="space-y-3">
+              {incidentTypes.map(incident => (
+                <button
+                  key={incident.id}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                    selectedIncident === incident.id 
+                      ? 'bg-guardian-cyan/20 border border-guardian-cyan/40' 
+                      : 'border border-guardian-cyan/10 hover:bg-guardian-dark'
+                  }`}
+                  onClick={() => {
+                    setSelectedIncident(incident.id);
+                    setRecoveryStep(0);
+                    setScanResults([]);
+                    setTargetUrl('');
+                  }}
+                >
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                    selectedIncident === incident.id 
+                      ? 'bg-guardian-cyan/20' 
+                      : 'bg-guardian-dark'
+                  }`}>
+                    {incident.icon}
+                  </div>
+                  <span>{incident.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-guardian-cyan/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-guardian-cyan" />
+                <span className="text-sm">Need help now?</span>
+              </div>
+              <button className="cyber-button">
+                Talk to an Expert
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 glassmorphism border border-guardian-cyan/20 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <LifeBuoy className="w-5 h-5 text-guardian-cyan" />
+              <h3 className="text-lg font-medium">Guardian Help</h3>
+            </div>
+            <p className="text-sm text-guardian-light/70 mb-4">
+              Talk to helpers who can show you how to fix things.
+            </p>
+            <button className="w-full cyber-button">
+              Join Help Room
+            </button>
+          </div>
+        </div>
+
+        <div className="lg:col-span-8">
+          {selectedIncident ? (
+            <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-medium text-guardian-light mb-2">
+                  {incidentTypes.find(i => i.id === selectedIncident)?.name} Help
+                </h2>
+                <p className="text-sm text-guardian-light/70">
+                  Follow these steps to fix your problem and stay safe.
+                </p>
+              </div>
+
+              {selectedIncident === 'check-vulnerability' && (
+                <div className="mb-8">
+                  <div className="flex justify-between text-xs text-guardian-light/50 mb-2">
+                    <span>Progress</span>
+                    <span>{recoveryStep + 1} of {scanResults.length > 0 && recoveryStep === 2 ? scanResults.length + 2 : 3}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-guardian-dark rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-guardian-cyan transition-all duration-300"
+                      style={{ width: `${((recoveryStep + 1) / (scanResults.length > 0 && recoveryStep === 2 ? scanResults.length + 2 : 3)) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {getRecoverySteps().length > 0 && (
+                <div className="animate-fade-in">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-guardian-cyan/20 text-guardian-cyan border border-guardian-cyan/30">
+                      {recoveryStep + 1}
+                    </div>
+                    <h3 className="text-lg font-medium">{getRecoverySteps()[0].title}</h3>
+                  </div>
+
+                  <p className="text-guardian-light/80 mb-6 pl-14">
+                    {getRecoverySteps()[0].description}
+                  </p>
+
+                  {selectedIncident === 'check-vulnerability' && recoveryStep === 0 && (
+                    <input
+                      type="text"
+                      value={targetUrl}
+                      onChange={(e) => setTargetUrl(e.target.value)}
+                      placeholder="Enter your app URL (e.g., http://example.com)"
+                      className="w-full mb-4 p-2 bg-guardian-dark border border-guardian-cyan/20 rounded-md text-guardian-light"
+                    />
+                  )}
+
+                  {selectedIncident === 'check-vulnerability' && recoveryStep === 1 && (
+                    <div className="pl-14 mb-6">
+                      {scanResults.length > 0 ? (
+                        <ul className="list-disc text-guardian-light/80">
+                          {scanResults.map((result, index) => (
+                            <li key={index}>{result}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-guardian-light/70">Scanning... Please wait.</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-between pl-14">
+                    <button 
+                      className={`cyber-button ${isScanning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={getRecoverySteps()[0].customAction || (() => window.open(getRecoverySteps()[0].actionLink, '_blank'))}
+                      disabled={isScanning}
+                    >
+                      {isScanning ? 'Scanning...' : getRecoverySteps()[0].action}
+                    </button>
+
+                    <div className="flex gap-3">
+                      <button 
+                        className="px-4 py-2 border border-guardian-cyan/20 rounded-md hover:bg-guardian-dark transition-colors"
+                        onClick={() => setRecoveryStep(Math.max(0, recoveryStep - 1))}
+                        disabled={recoveryStep === 0 || isScanning}
+                      >
+                        Previous
+                      </button>
+                      <button 
+                        className="px-4 py-2 bg-guardian-dark border border-guardian-cyan/20 rounded-md hover:bg-guardian-cyan/20 transition-colors"
+                        onClick={() => setRecoveryStep(Math.min((scanResults.length > 0 && recoveryStep === 2 ? scanResults.length + 1 : 2), recoveryStep + 1))}
+                        disabled={(recoveryStep === 2 && scanResults.length === 0) || isScanning}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedIncident === 'check-vulnerability' && (
+                    <div className="mt-10 pt-6 border-t border-guardian-cyan/10">
+                      <h4 className="text-sm font-medium mb-4">Help Steps</h4>
+                      <div className="space-y-2">
+                        {[
+                          'Enter your app URL',
+                          'See scan results',
+                          ...(scanResults.length > 0 ? scanResults.map((_, i) => `Fix problem ${i + 1}`) : ['No problems found']),
+                        ].map((title, index) => (
+                          <div 
+                            key={index}
+                            className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                              index === recoveryStep 
+                                ? 'bg-guardian-cyan/10' 
+                                : index < recoveryStep 
+                                  ? 'text-guardian-light/50' 
+                                  : 'text-guardian-light/30'
+                            }`}
+                            onClick={() => setRecoveryStep(index)}
+                          >
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                              index < recoveryStep 
+                                ? 'bg-guardian-cyan/20' 
+                                : 'bg-guardian-dark'
+                            }`}>
+                              {index < recoveryStep ? (
+                                <CheckCircle className="w-4 h-4 text-guardian-cyan" />
+                              ) : (
+                                <Clock className="w-3 h-3" />
+                              )}
+                            </div>
+                            <span className="text-sm">{title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="glassmorphism border border-guardian-cyan/20 rounded-lg p-12 flex flex-col items-center justify-center h-full">
+              <Shield className="w-16 h-16 text-guardian-cyan/50 mb-4" />
+              <h3 className="text-xl font-medium text-guardian-light mb-2">Help Guide</h3>
+              <p className="text-center text-guardian-light/70 mb-6 max-w-md">
+                Pick a problem on the left to get steps and help from experts.
+              </p>
+              <p className="text-sm text-guardian-light/50">
+                We update our help with the latest danger info.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SanctuaryToolkit;" and Mascot.tx "
+import React, { useState, useEffect } from 'react';
+import { useTypingEffect } from '@/utils/animations';
+
+interface MascotProps {
+  message?: string;
+  pulseEffect?: boolean;
+  className?: string;
+}
+
+const Mascot: React.FC<MascotProps> = ({ 
+  message = "Hello, I'm Sanctra. I'll help you stay protected online.",
+  pulseEffect = true,
+  className = ""
+}) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const [currentMessage, setCurrentMessage] = useState(message);
+  const { displayedText, isComplete } = useTypingEffect(currentMessage, 40);
+  
+  useEffect(() => {
+    setCurrentMessage(message);
+  }, [message]);
+  
+  return (
+    <div className={`fixed bottom-6 right-6 flex items-end gap-3 z-50 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'} ${className}`}>
+      {/* Speech bubble */}
+      {isVisible && (
+        <div className="relative max-w-xs p-4 rounded-lg bg-guardian-dark border border-guardian-cyan/30 animate-slide-up">
+          <div className="text-sm text-guardian-light">
+            {displayedText}
+            {!isComplete && <span className="animate-pulse">|</span>}
+          </div>
+          <div className="absolute -bottom-2 right-4 w-0 h-0 border-l-8 border-t-8 border-r-0 border-transparent border-t-guardian-dark"></div>
+        </div>
+      )}
+      
+      {/* Mascot */}
+      <div 
+        className={`relative w-16 h-16 rounded-full overflow-hidden border-2 border-guardian-cyan/50 shadow-lg cursor-pointer ${pulseEffect ? 'animate-pulse-glow' : ''}`}
+        onClick={() => setIsVisible(prev => !prev)}
+      >
+        <img 
+          src="/sanctra.svg" 
+          alt="Sanctra" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-guardian-cyan/10 to-guardian-purple/10 pointer-events-none"></div>
+      </div>
+    </div>
+  );
+};
+
+export default Mascot;
+" and ParticleBackground.tsx "import React, { useRef, useEffect } from 'react';
+import { useParticleEffect } from '@/utils/animations';
+import { debounce } from 'lodash';
+
+interface ParticleBackgroundProps {
+  className?: string;
+}
+
+const ParticleBackground: React.FC<ParticleBackgroundProps> = ({ className }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { particles, canvasSize } = useParticleEffect(
+    70, // particle count
+    0.2, // Reduced max speed (was 0.5)
+    0.005, // fade speed
+    ['#64FFDA20', '#0EA5E920', '#8B5CF620', '#D946EF20'] // colors with transparency
+  );
+
+  // Handle canvas resize with debouncing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Debounced resize handler
+    const handleResize = debounce(() => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      console.log('Canvas resized:', { width: canvas.width, height: canvas.height });
+    }, 100);
+
+    handleResize(); // Initial resize
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      handleResize.cancel();
+    };
+  }, []);
+
+  // Draw particles and connections
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvasSize) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear and redraw
+    ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+    console.log('Drawing particles:', particles.length);
+
+    // Draw particles
+    particles.forEach(particle => {
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fillStyle = particle.color.replace(/20$/, Math.floor(particle.opacity * 100).toString(16).padStart(2, '0'));
+      ctx.fill();
+    });
+
+    // Draw connections
+    ctx.strokeStyle = 'rgba(100, 255, 218, 0.05)';
+    ctx.lineWidth = 0.5;
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 150) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }, [particles, canvasSize]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`fixed top-0 left-0 w-full h-full -z-10 ${className}`}
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
+};
+
+export default ParticleBackground;" and the ThreatCard.tsx "import React from 'react';
+import { useAnimatedMount, useCountUp } from '@/utils/animations';
+import { ThreatData } from '@/utils/threatData';
+import { AlertTriangle, Shield, Globe, Clock, BarChart, X } from 'lucide-react'; // Added X for close icon
+
+interface ThreatCardProps {
+  threat: ThreatData;
+  className?: string;
+  setSelectedThreat: (threat: ThreatData | null) => void; // Explicitly typed
+}
+
+const ThreatCard: React.FC<ThreatCardProps> = ({ threat, className = "", setSelectedThreat }) => {
+  const mounted = useAnimatedMount();
+  const intensity = useCountUp(threat.intensity);
+
+  const getThreatColor = () => {
+    switch (threat.type) {
+      case 'ransomware':
+        return 'bg-threat-ransomware/10 border-threat-ransomware/30 text-threat-ransomware';
+      case 'phishing':
+        return 'bg-threat-phishing/10 border-threat-phishing/30 text-threat-phishing';
+      case 'malware':
+        return 'bg-threat-malware/10 border-threat-malware/30 text-threat-malware';
+      case 'ddos':
+        return 'bg-threat-ddos/10 border-threat-ddos/30 text-threat-ddos';
+      default:
+        return 'bg-threat-default/10 border-threat-default/30 text-threat-default';
+    }
+  };
+
+  const getThreatIcon = () => {
+    switch (threat.type) {
+      case 'ransomware':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'phishing':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'malware':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'ddos':
+        return <AlertTriangle className="w-5 h-5" />;
+      default:
+        return <AlertTriangle className="w-5 h-5" />;
+    }
+  };
+
+  return (
+    <div className={`relative group ${mounted ? 'animate-slide-up' : 'opacity-0'} ${className}`}>
+      <div className="card-highlight"></div>
+      <div className={`relative p-5 rounded-lg border ${getThreatColor()} glassmorphism`}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {getThreatIcon()}
+            <h3 className="font-medium capitalize">{threat.type}</h3>
+          </div>
+          <span className="px-2 py-0.5 text-xs rounded-full bg-guardian-dark border border-guardian-cyan/20">
+            {new Date(threat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+
+        <p className="mb-3 text-sm text-guardian-light opacity-90">{threat.description}</p>
+
+        <div className="grid grid-cols-2 gap-3 text-xs text-guardian-light opacity-80">
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5" />
+            <span>{threat.country}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{new Date(threat.timestamp).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5" />
+            <span>{threat.impact}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <BarChart className="w-3.5 h-3.5" />
+            <span>Intensity: {intensity}/10</span>
+          </div>
+        </div>
+
+        {/* Enhanced Close Button with Icon */}
+        <button
+          onClick={() => setSelectedThreat(null)}
+          className="cyber-button mt-3 flex items-center justify-center gap-1 px-3 py-1 text-xs"
+        >
+          <X className="w-3 h-3" /> {/* Close icon */}
+          <span>Close</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ThreatCard;" and intergration/supabase/client.ts "// integrations/supabase/client.ts
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './types';
+
+const SUPABASE_URL = "https://musqwfamtlcflnfucqwy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11c3F3ZmFtdGxjZmxuZnVjcXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyODU3MDgsImV4cCI6MjA1Nzg2MTcwOH0.Vx2zAO1Bviv3n428KsiyzqSIqj5UZB1j8WE84vrqOAI";
+
+// Create Supabase client
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Utility function to get the current user session
+export const getUserSession = async () => {
+  const { data: session, error } = await supabase.auth.getSession();
+  if (error) console.error('Error getting session:', error.message);
+  return session;
+};
+
+// Utility function to get the current user
+export const getCurrentUser = async () => {
+  const { data: user, error } = await supabase.auth.getUser();
+  if (error) console.error('Error getting user:', error.message);
+  return user.user;
+};" and integration/supabase/type.ts "export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      guardians: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          motivation: string | null
+          name: string
+          score: number | null
+          threats_stopped: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          motivation?: string | null
+          name: string
+          score?: number | null
+          threats_stopped?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          motivation?: string | null
+          name?: string
+          score?: number | null
+          threats_stopped?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+" and this important file Index.ts "// src/pages/Index.tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import GlobeVisualization from '../components/Globe/GlobeVisualization';
+import GuardianDashboard from '../components/Guardian/GuardianDashboard';
+import SanctuaryToolkit from '../components/Sanctuary/SanctuaryToolkit';
+import { Button } from "@/components/ui/button";
+import { Loader2, Shield, Users, AlertTriangle, Zap, ChevronRight, Lock, Globe, BarChart, Info } from 'lucide-react';
+
+const Index = () => {
+  const location = useLocation();
+  const path = location.pathname;
+
+  // Guided Tour State
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [showTourPrompt, setShowTourPrompt] = useState(false);
+
+  useEffect(() => {
+    // Show tour prompt every time the homepage loads
+    if (path === '/') {
+      setTimeout(() => setShowTourPrompt(true), 1000); // Wait 1 second for effect
+    }
+  }, [path]); // Runs every time the path changes
+
+  const startTour = () => {
+    setTourActive(true);
+    setShowTourPrompt(false);
+    setTourStep(1);
+  };
+
+  const nextStep = () => setTourStep((prev) => prev + 1);
+  const prevStep = () => setTourStep((prev) => prev - 1);
+  const endTour = () => {
+    setTourActive(false);
+    setTourStep(0);
+    setShowTourPrompt(false); // Hide prompt when tour ends
+  };
+
+  // Simple English tour steps
+  const tourSteps = [
+    {
+      target: '#header-global-pulse',
+      content: 'Click "Global Pulse" to see online dangers around the world.',
+    },
+    {
+      target: '#header-guardian-network',
+      content: 'Go to "Guardian Network" to meet other helpers and see group info.',
+    },
+    {
+      target: '#header-sanctuary',
+      content: 'Are you hacked and dont know how to recover yourself? Use "Sanctuary" to get tools to stop online attacks.',
+    },
+    {
+      target: '#join-forge-btn',
+      content: 'Press "Join the Forge" to become a helper and start.',
+    },
+    {
+      target: '#access-command-btn',
+      content: 'Click "Access Command" to log in and check your helper page.',
+    },
+    {
+      target: '#globe-visualization',
+      content: 'This globe shows online dangers. Touch it to look closer.',
+    },
+    {
+      target: '#enlist-now-btn',
+      content: 'Press "Enlist Now" (Scroll a little bit down) 👇 to join and fight online bad things.',
+    },
+    {
+      target: '#footer-join-network',
+      content: 'link at the footer:👇Click "Join the team" to help others.',
+    },
+    {
+      target: '#footer-leaderboard',
+      content: 'link at the footer:Click "View Leader board" 👇See who the best helpers are.',
+    },
+    {
+      target: '#footer-challenge',
+      content: 'link at the footer👇Click "Start  Challenge" Try a test to practice stopping online dangers.',
+    },
+  ];
+
+  const renderContent = () => {
+    switch (path) {
+      case '/guardian':
+        return <GuardianDashboard />;
+      case '/sanctuary':
+        return <SanctuaryToolkit />;
+      default:
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-guardian-dark via-gray-900 to-black text-guardian-light overflow-hidden relative">
+            {/* Welcome Section */}
+            <section className="relative px-6 py-20 text-center border-b border-cyan-400/20">
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/metal.png')] opacity-10 animate-subtle-move"></div>
+              <h1 className="text-5xl md:text-7xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-600 to-silver-300 bg-clip-text text-transparent mb-6 tracking-tight animate-slide-in">
+                Guardian Sanctuary
+              </h1>
+              <h2 className="text-2xl md:text-3xl font-medium text-silver-300/80 mb-8 animate-fade-in-delay">
+                Make the Internet Safe
+              </h2>
+              <p className="text-lg md:text-xl text-silver-300/70 max-w-3xl mx-auto leading-relaxed animate-fade-in-delay-2">
+                Help stop online dangers with tools, maps, and a big team of friends.
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  id="join-forge-btn"
+                  className="group relative px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-md hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-glow-metal overflow-hidden"
+                >
+                  <Link to="/join">
+                    <span className="relative z-10">Join the Forge</span>
+                    <div className="absolute inset-0 bg-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  id="access-command-btn"
+                  variant="outline"
+                  className="px-8 py-4 text-cyan-400 border-cyan-400/50 rounded-md hover:bg-cyan-400/10 hover:border-cyan-400 transition-all duration-300 shadow-md hover:shadow-glow-metal"
+                >
+                  <Link to="/login">Access Command</Link>
+                </Button>
+              </div>
+            </section>
+
+            {/* Globe Section */}
+            <section id="globe-visualization" className="relative py-16 px-6">
+              <div className="relative z-10 max-w-6xl mx-auto">
+                <GlobeVisualization className="w-full h-[70vh] rounded-xl border border-cyan-400/30 shadow-lg shadow-cyan-400/20 animate-scale-in" />
+                <div className="absolute top-6 left-6 bg-guardian-dark/90 p-4 rounded-lg shadow-md flex items-center space-x-3 border border-cyan-400/20 animate-pulse-metal">
+                  <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                  <span className="text-sm font-medium text-silver-300">Live Danger Map</span>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-guardian-dark/50 to-transparent pointer-events-none"></div>
+            </section>
+
+            {/* Numbers Section */}
+            <section className="py-20 px-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { icon: <Shield className="w-10 h-10 text-cyan-400" />, title: "35 Helpers", desc: "Fighting online bad things" },
+                { icon: <Users className="w-10 h-10 text-cyan-400" />, title: "2,000+ Places", desc: "Working together everywhere" },
+                { icon: <AlertTriangle className="w-10 h-10 text-cyan-400" />, title: "98% Good Work", desc: "Smart tools find dangers" },
+              ].map((stat, index) => (
+                <div
+                  key={index}
+                  className="relative bg-guardian-dark/80 p-8 rounded-lg border border-cyan-400/20 shadow-md hover:shadow-glow-metal transition-all duration-500 animate-fade-in-delay"
+                  style={{ animationDelay: `${index * 0.2}s` }}
+                >
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/metal.png')] opacity-5"></div>
+                  <div className="relative z-10">
+                    {stat.icon}
+                    <h3 className="text-2xl font-semibold text-silver-300 mt-4 mb-2">{stat.title}</h3>
+                    <p className="text-silver-300/70 text-sm">{stat.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            {/* Our Goal Section */}
+            <section className="py-20 px-6 max-w-4xl mx-auto text-center border-t border-cyan-400/20">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-8 animate-slide-in">
+                Our Goal
+              </h2>
+              <p className="text-lg text-silver-300/80 leading-relaxed animate-fade-in-delay">
+                Guardian Sanctuary uses tools and people to keep the internet safe. We give helpers good tools and a strong team to stop online dangers.
+              </p>
+            </section>
+
+            {/* Main Tools Section */}
+            <section className="py-20 px-6 max-w-6xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent text-center mb-12 animate-slide-in">
+                Our Tools
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  { icon: <Globe className="w-12 h-12 text-cyan-400" />, title: "Danger Map", desc: "See online dangers on a world map." },
+                  { icon: <Lock className="w-12 h-12 text-cyan-400" />, title: "Helper Tools", desc: "Tools to find and stop attacks." },
+                  { icon: <BarChart className="w-12 h-12 text-cyan-400" />, title: "Your Score", desc: "See how good you are at helping." },
+                ].map((feature, index) => (
+                  <div
+                    key={index}
+                    className="group relative bg-guardian-dark/90 p-8 rounded-lg border border-cyan-400/30 hover:border-cyan-400 transition-all duration-300 shadow-lg hover:shadow-glow-metal animate-fade-in-delay"
+                    style={{ animationDelay: `${index * 0.2}s` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+                    <div className="relative z-10">
+                      {feature.icon}
+                      <h3 className="text-xl font-semibold text-silver-300 mt-4 mb-2">{feature.title}</h3>
+                      <p className="text-silver-300/70 text-sm">{feature.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Join Us Section */}
+            <section className="py-20 px-6 text-center bg-gradient-to-b from-guardian-dark/50 to-gray-900 border-t border-cyan-400/20">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-8 animate-slide-in">
+                Join Our Team
+              </h2>
+              <p className="text-lg text-silver-300/80 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-delay">
+                Join us to use cool tools and help keep the internet safe. Start now!
+              </p>
+              <Button
+                asChild
+                id="enlist-now-btn"
+                className="group relative px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-md hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-glow-metal overflow-hidden"
+              >
+                <Link to="/join">
+                  <span className="relative z-10 flex items-center space-x-2">
+                    <span>Enlist Now</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </span>
+                  <div className="absolute inset-0 bg-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                </Link>
+              </Button>
+            </section>
+
+            {/* Star Helper Section */}
+            <section className="py-20 px-6 max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-8 animate-slide-in">
+                Star Helper
+              </h2>
+              <div className="relative bg-guardian-dark/90 p-8 rounded-lg border border-cyan-400/30 shadow-lg hover:shadow-glow-metal transition-all duration-300 animate-fade-in-delay">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/metal.png')] opacity-10"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full border-2 border-cyan-400/50 shadow-glow-metal flex items-center justify-center">
+                      <Zap className="w-8 h-8 text-cyan-400 animate-pulse-metal" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-semibold text-silver-300 mb-2">Kara Voss</h3>
+                  <p className="text-silver-300/70 text-sm mb-4">Super Helper, 250 Points</p>
+                  <p className="text-silver-300/80 text-base">
+                    Kara stopped a big online attack and made our team stronger.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Danger Alert */}
+            {/* <section className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-red-600/20 to-orange-600/20 border-t border-red-400/30 p-4 flex items-center justify-between animate-slide-up">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" />
+                <span className="text-sm font-medium text-silver-300">Warning: Big Online Attack in Area 7</span>
+              </div>
+              <Button
+                variant="outline"
+                className="text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 rounded-md transition-all duration-300"
+              >
+                <Link to="/challenge">Fight Now</Link>
+              </Button>
+            </section> */}
+
+            {/* Tour Start Popup */}
+            {showTourPrompt && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+                <div className="bg-guardian-dark/90 p-6 rounded-lg border border-cyan-400/30 shadow-lg shadow-cyan-400/20 animate-fade-in">
+                  <h3 className="text-xl font-semibold text-silver-300 mb-4">
+                    Hello! Welcome to Guardian Sanctuary!
+                  </h3>
+                  <p className="text-silver-300/80 mb-6">
+                    Do you want me to show you how to use this app?
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <Button
+                      onClick={startTour}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 rounded-md transition-all duration-300"
+                    >
+                      Yes, Show Me
+                    </Button>
+                    <Button
+                      onClick={() => setShowTourPrompt(false)}
+                      variant="outline"
+                      className="text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 rounded-md transition-all duration-300"
+                    >
+                      No, I’m Okay
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tour Guide */}
+            {tourActive && tourStep > 0 && tourStep <= tourSteps.length && (
+              <div className="fixed inset-0 z-50">
+                <div className="absolute inset-0 bg-black/70" onClick={endTour}></div>
+                <div
+                  className="absolute bg-guardian-dark/90 p-4 rounded-lg border border-cyan-400/30 shadow-lg shadow-cyan-400/20 text-silver-300 animate-fade-in-tour"
+                  style={{
+                    top: '20%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    maxWidth: '400px',
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Info className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-lg font-semibold">Step {tourStep} of {tourSteps.length}</h3>
+                  </div>
+                  <p className="text-silver-300/80 mb-4">{tourSteps[tourStep - 1].content}</p>
+                  <div className="flex justify-between">
+                    <Button
+                      onClick={prevStep}
+                      disabled={tourStep === 1}
+                      variant="outline"
+                      className="text-cyan-400 border-cyan-400/50 hover:bg-cyan-400/10 rounded-md transition-all duration-300"
+                    >
+                      Back
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={endTour}
+                        variant="outline"
+                        className="text-silver-300 border-silver-300/50 hover:bg-silver-300/10 rounded-md transition-all duration-300"
+                      >
+                        Stop Tour
+                      </Button>
+                      <Button
+                        onClick={tourStep === tourSteps.length ? endTour : nextStep}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 rounded-md transition-all duration-300"
+                      >
+                        {tourStep === tourSteps.length ? 'Done' : 'Next'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="absolute bg-transparent border-2 border-cyan-400 rounded-lg animate-pulse-tour"
+                  style={{
+                    ...(document.querySelector(tourSteps[tourStep - 1].target)?.getBoundingClientRect() || {}),
+                    width: document.querySelector(tourSteps[tourStep - 1].target)?.clientWidth,
+                    height: document.querySelector(tourSteps[tourStep - 1].target)?.clientHeight,
+                    top: document.querySelector(tourSteps[tourStep - 1].target)?.getBoundingClientRect().top,
+                    left: document.querySelector(tourSteps[tourStep - 1].target)?.getBoundingClientRect().left,
+                    zIndex: 60,
+                  }}
+                ></div>
+              </div>
+            )}
+          </div>
+        );
+    }
+  };
+
+  return renderContent();
+};
+
+// Animation Styles
+const styles = `
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDelay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulseMetal {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+  }
+  @keyframes subtleMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 100px 100px; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes fadeInTour {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulseTour {
+    0%, 100% { border-color: rgba(100, 255, 218, 0.5); }
+    50% { border-color: rgba(100, 255, 218, 1); }
+  }
+  .animate-slide-in { animation: slideIn 0.8s ease-out; }
+  .animate-fade-in-delay { animation: fadeInDelay 0.8s ease-out 0.4s forwards; opacity: 0; }
+  .animate-fade-in-delay-2 { animation: fadeInDelay 0.8s ease-out 0.6s forwards; opacity: 0; }
+  .animate-pulse-metal { animation: pulseMetal 2s infinite ease-in-out; }
+  .animate-subtle-move { animation: subtleMove 20s infinite linear; }
+  .animate-scale-in { animation: scaleIn 1s ease-out; }
+  .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+  .animate-fade-in-tour { animation: fadeInTour 0.5s ease-out; }
+  .animate-pulse-tour { animation: pulseTour 1.5s infinite; }
+  .shadow-glow-metal { box-shadow: 0 0 20px rgba(100, 255, 218, 0.4), 0 0 5px rgba(100, 255, 218, 0.2); }
+`;
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+export default Index;" and another important file  App.tsx "// src/App.tsx
+import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { supabase, getUserSession } from "@/integrations/supabase/client";
+import Layout from "./components/Layout/Layout";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import GuardianDashboard from "./components/Guardian/GuardianDashboard";
+import SanctuaryToolkit from "./components/Sanctuary/SanctuaryToolkit";
+import GuardianForm from "./components/Guardian/GuardianForm";
+import GlobeVisualization from "./components/Globe/GlobeVisualization";
+import Register from "@/components/Auth/Registration";
+import Login from "@/components/Auth/Login";
+import Profile from "@/components/Profile/Profile";
+import Challenge from "@/components/Challenges/Challenge";
+import Leaderboard from "@/components/LeaderBoard/LeaderBoard";
+
+const queryClient = new QueryClient();
+
+export const UserContext = React.createContext<any>(null);
+
+const App = () => {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const session = await getUserSession();
+      setUser(session?.session?.user ?? null);
+      setLoading(false);
+    };
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-guardian-dark to-gray-900 flex items-center justify-center">
+        <div className="text-silver-300 flex items-center space-x-3">
+          <div className="w-8 h-8 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+          <span>Loading Sanctuary...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <UserContext.Provider value={user}>
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/global-pulse" element={<GlobeVisualization />} />
+                <Route path="/guardian" element={<GuardianDashboard />} />
+                <Route path="/sanctuary" element={<SanctuaryToolkit />} />
+                <Route path="/join" element={<GuardianForm />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route
+                  path="/profile"
+                  element={user ? <Profile /> : <Navigate to="/login" />}
+                />
+                <Route
+                  path="/challenge"
+                  element={user ? <Challenge /> : <Navigate to="/login" />}
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </BrowserRouter>
+        </UserContext.Provider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;" and another important file is "supabase/functions/index.ts" and another is package.json "{
+  "name": "vite_react_shadcn_ts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
+    "@radix-ui/react-aspect-ratio": "^1.1.0",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-collapsible": "^1.1.0",
+    "@radix-ui/react-context-menu": "^2.2.1",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-hover-card": "^1.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-menubar": "^1.1.1",
+    "@radix-ui/react-navigation-menu": "^1.2.0",
+    "@radix-ui/react-popover": "^1.1.1",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-radio-group": "^1.2.0",
+    "@radix-ui/react-scroll-area": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "@radix-ui/react-toggle": "^1.1.0",
+    "@radix-ui/react-toggle-group": "^1.1.0",
+    "@radix-ui/react-tooltip": "^1.1.4",
+    "@supabase/supabase-js": "^2.49.1",
+    "@tanstack/react-query": "^5.56.2",
+    "@types/three": "^0.162.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
+    "date-fns": "^3.6.0",
+    "embla-carousel-react": "^8.3.0",
+    "input-otp": "^1.2.4",
+    "lucide-react": "^0.462.0",
+    "next-themes": "^0.3.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "react-resizable-panels": "^2.1.3",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.12.7",
+    "sonner": "^1.5.0",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.162.0",
+    "vaul": "^0.9.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/node": "^22.5.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "lovable-tagger": "^1.1.7",
+    "postcss": "^8.4.47",
+    "supabase": "^2.19.7",
+    "tailwindcss": "^3.4.11",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1"
+  }
+}
+"if you would consider this you woul d help me with the project as it isn't done and there are some issues

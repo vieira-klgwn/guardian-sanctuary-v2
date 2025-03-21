@@ -4,13 +4,6 @@ import {
   Lock, Shield, Smartphone, CreditCard, 
   Mail, LifeBuoy, MessageSquare, Clock, CheckCircle, Search
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client with your project details
-const supabase = createClient(
-  'https://musqwfamtlcflnfucqwy.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11c3F3ZmFtdGxjZmxuZnVjcXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyODU3MDgsImV4cCI6MjA1Nzg2MTcwOH0.Vx2zAO1Bviv3n428KsiyzqSIqj5UZB1j8WE84vrqOAI'
-);
 
 const incidentTypes = [
   { id: 'check-vulnerability', name: 'Check Vulnerability of Your System', icon: <Search className="w-5 h-5" /> },
@@ -28,6 +21,7 @@ const SanctuaryToolkit: React.FC = () => {
   const [targetUrl, setTargetUrl] = useState('');
   const [scanResults, setScanResults] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const getRecoverySteps = () => {
     switch (selectedIncident) {
@@ -142,26 +136,41 @@ const SanctuaryToolkit: React.FC = () => {
   const scanVulnerabilities = async () => {
     if (!targetUrl) {
       setScanResults(['Please enter a URL first!']);
+      setScanError(null);
       return;
     }
 
     setIsScanning(true);
+    setScanError(null);
+
     try {
-      const { data, error } = await supabase.functions.invoke('scanner', {
+      const response = await fetch('/api/scanner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ url: targetUrl }),
       });
-      if (error) {
-        setScanResults([error.message || 'Scan failed']);
-      } else if (data.error) {
-        setScanResults([data.error]);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        setScanError(data.error);
+        setScanResults([]);
       } else {
         setScanResults(data.vulnerabilities.length > 0 ? data.vulnerabilities : ['No problems found!']);
       }
       setRecoveryStep(1);
     } catch (error) {
-      setScanResults(['Scan failed. Check your connection or URL.']);
+      console.error('Scan failed:', error);
+      setScanError('Scan failed. Check your connection or URL.');
+      setScanResults([]);
+    } finally {
+      setIsScanning(false);
     }
-    setIsScanning(false);
   };
 
   return (
@@ -195,6 +204,7 @@ const SanctuaryToolkit: React.FC = () => {
                     setRecoveryStep(0);
                     setScanResults([]);
                     setTargetUrl('');
+                    setScanError(null);
                   }}
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
@@ -286,7 +296,9 @@ const SanctuaryToolkit: React.FC = () => {
 
                   {selectedIncident === 'check-vulnerability' && recoveryStep === 1 && (
                     <div className="pl-14 mb-6">
-                      {scanResults.length > 0 ? (
+                      {scanError ? (
+                        <p className="text-red-400">{scanError}</p>
+                      ) : scanResults.length > 0 ? (
                         <ul className="list-disc text-guardian-light/80">
                           {scanResults.map((result, index) => (
                             <li key={index}>{result}</li>

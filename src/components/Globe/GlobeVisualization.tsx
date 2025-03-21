@@ -238,7 +238,7 @@ const GlobeVisualization: React.FC<GlobeVisualizationProps> = ({ className = "" 
               <div className="absolute right-4 bottom-12 max-w-sm w-full">
                 <ThreatCard threat={selectedThreat} setSelectedThreat={setSelectedThreat} />
                 <button className="mt-2 w-full text-xs flex items-center justify-center gap-1 p-2 rounded-md bg-guardian-cyan/10 text-guardian-cyan hover:bg-guardian-cyan/20 transition-colors">
-                  <span>View All Threats</span>
+                  <span>Provide a solution to this threat!</span>
                   <ArrowUpRight className="w-3 h-3" />
                 </button>
               </div>
